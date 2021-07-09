@@ -1,10 +1,10 @@
 {
   "domain": "auroraplus",
-  "name": "auroraplus",
+  "name": "Aurora+",
   "documentation": "https://github.com/home-assistant/example-custom-config/tree/master/custom_components/example_sensor/",
   "dependencies": [],
   "codeowners": ["@LeighCurran"],
-  "requirements": ["AuroraPlus==0.0.2"],
+  "requirements": ["AuroraPlus==1.0.0"],
   "iot_class": "cloud_polling",
-  "version": "0.0.2"
+  "version": "1.0.0"
 }
