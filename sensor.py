@@ -21,11 +21,6 @@ import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
-ATTR_OTHER = 'Other'
-ATTR_TOTAL = 'Total'
-ATTR_T41 = 'T41'
-ATTR_T31 = 'T31'
-
 SENSOR_ESTIMATEDBALANCE = 'EstimatedBalance'
 SENSOR_USAGEDAYSREMAINING = 'UsageDaysRemaining'
 SENSOR_AVERAGEDAILYUSAGE = 'AverageDailyUsage'
