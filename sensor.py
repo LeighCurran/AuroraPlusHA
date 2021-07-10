@@ -41,6 +41,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Required(CONF_USERNAME): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Optional(CONF_SCAN_INTERVAL, default=SCAN_INTERVAL): cv.time_period,
         vol.Optional(CONF_MONITORED_CONDITIONS, default=DEFAULT_MONITORED):
             vol.All(cv.ensure_list, [vol.In(POSSIBLE_MONITORED)])
     }
