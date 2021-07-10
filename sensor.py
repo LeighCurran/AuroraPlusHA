@@ -14,13 +14,12 @@ from homeassistant.const import (
     CONF_TYPE,
     CONF_MONITORED_CONDITIONS,
     CURRENCY_DOLLAR,
+    CONF_SCAN_INTERVAL,
     TIME_DAYS
 )
 import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
-
-SCAN_INTERVAL = timedelta(hours=6)
 
 SENSOR_ESTIMATEDBALANCE = 'EstimatedBalance'
 SENSOR_USAGEDAYSREMAINING = 'UsageDaysRemaining'
@@ -35,13 +34,14 @@ POSSIBLE_MONITORED = [ SENSOR_ESTIMATEDBALANCE, SENSOR_USAGEDAYSREMAINING, SENSO
                         SENSOR_ACTUALBALANCE, SENSOR_UNBILLEDAMOUNT, SENSOR_BILLTOTALAMOUNT, SENSOR_BILLOVERDUEAMOUNT ]
 DEFAULT_MONITORED = POSSIBLE_MONITORED
 DEFAULT_NAME = 'AuroraPlus'
+DEFAULT_SCAN_INTERVAL = timedelta(hours=6)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_USERNAME): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Optional(CONF_SCAN_INTERVAL, default=SCAN_INTERVAL): cv.time_period,
+        vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
         vol.Optional(CONF_MONITORED_CONDITIONS, default=DEFAULT_MONITORED):
             vol.All(cv.ensure_list, [vol.In(POSSIBLE_MONITORED)])
     }
