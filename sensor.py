@@ -11,7 +11,6 @@ from homeassistant.const import (
     CONF_USERNAME,
     CONF_PASSWORD,
     CONF_NAME,
-    CONF_TYPE,
     CONF_MONITORED_CONDITIONS,
     CURRENCY_DOLLAR,
     CONF_SCAN_INTERVAL,
