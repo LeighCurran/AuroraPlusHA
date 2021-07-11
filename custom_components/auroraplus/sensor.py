@@ -143,8 +143,8 @@ class AuroraAccountSensor(SensorEntity):
         elif self._sensor == SENSOR_BILLOVERDUEAMOUNT:       
             self._state = self._data.BillOverDueAmount
         elif self._sensor == SENSOR_DOLLARVALUEUSAGE:       
-            self._state = self._data.DollarValueUsage['Total']
+            self._state = round(self._data.DollarValueUsage['Total'],2)
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:       
-            self._state = self._data.KilowattHourUsage['Total'] 
+            self._state = round(self._data.KilowattHourUsage['Total'],2)
         else:
             _LOGGER.error("Unknown sensor type found")

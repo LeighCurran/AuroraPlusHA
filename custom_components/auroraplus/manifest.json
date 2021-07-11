@@ -4,7 +4,8 @@
   "documentation": "https://github.com/home-assistant/example-custom-config/tree/master/custom_components/example_sensor/",
   "dependencies": [],
   "codeowners": ["@LeighCurran"],
-  "requirements": ["AuroraPlus==1.1.0"],
+  "requirements": ["AuroraPlus==1.1.1"],
   "iot_class": "cloud_polling",
-  "version": "1.1.0"
+  "config_flow": false,
+  "version": "1.1.1"
 }
