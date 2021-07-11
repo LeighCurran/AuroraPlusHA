@@ -35,9 +35,12 @@ SENSOR_KILOWATTHOURUSAGE = 'KilowattHourUsage'
 POSSIBLE_MONITORED = [ SENSOR_ESTIMATEDBALANCE, SENSOR_USAGEDAYSREMAINING, SENSOR_AVERAGEDAILYUSAGE, SENSOR_AMOUNTOWED,
                         SENSOR_ACTUALBALANCE, SENSOR_UNBILLEDAMOUNT, SENSOR_BILLTOTALAMOUNT, SENSOR_BILLOVERDUEAMOUNT,
                         SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE]
+
 DEFAULT_MONITORED = POSSIBLE_MONITORED
+
 DEFAULT_NAME = 'AuroraPlus'
-DEFAULT_SCAN_INTERVAL = timedelta(hours=6)
+
+DEFAULT_SCAN_INTERVAL = timedelta(hours=1)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -57,11 +60,10 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     name = config.get(CONF_NAME)
 
     try:
-        api = auroraplus.api(username, password)
+        auroraplus.api(username, password)
     except OSError as err:
         _LOGGER.error("Connection to Aurora+ failed: %s", err)
-        return False
-
+    
     for sensor in config.get(CONF_MONITORED_CONDITIONS):
         add_entities([AuroraAccountSensor(username, password, sensor, name)], True)
 
@@ -78,14 +80,7 @@ class AuroraAccountSensor(SensorEntity):
         self._state = None
         self._unit_of_measurement = None
         self._attributes = {}
-
-        try:
-            AuroraPlus = auroraplus.api(self._username , self._password)
-            AuroraPlus.getcurrent()
-            AuroraPlus.getsummary()
-            self._data = AuroraPlus
-        except OSError as err:
-            _LOGGER.error("Connection to Aurora+ failed: %s", err)
+        self._data = None
 
     @property
     def name(self):
@@ -116,11 +111,20 @@ class AuroraAccountSensor(SensorEntity):
     def extra_state_attributes(self):
         """Return device state attributes."""
         if self._sensor == SENSOR_DOLLARVALUEUSAGE:   
-            return self._data.UsageDaysRemaining
+            return self._data.DollarValueUsage
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:   
             return self._data.KilowattHourUsage
 
     def update(self):
+        try:
+            AuroraPlus = auroraplus.api(self._username , self._password)
+            AuroraPlus.getcurrent()
+            if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_DOLLARVALUEUSAGE:     
+                AuroraPlus.getsummary()
+            self._data = AuroraPlus
+        except OSError as err:
+            _LOGGER.error("Updating Aurora+ failed: %s", err)
+
         """Collect updated data from Aurora+ API."""
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
             self._state = self._data.EstimatedBalance
