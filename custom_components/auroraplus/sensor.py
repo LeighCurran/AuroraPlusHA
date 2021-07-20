@@ -22,19 +22,10 @@ import homeassistant.helpers.config_validation as cv
 _LOGGER = logging.getLogger(__name__)
 
 SENSOR_ESTIMATEDBALANCE = 'EstimatedBalance'
-SENSOR_USAGEDAYSREMAINING = 'UsageDaysRemaining'
-SENSOR_AVERAGEDAILYUSAGE = 'AverageDailyUsage'
-SENSOR_AMOUNTOWED = 'AmountOwed'
-SENSOR_ACTUALBALANCE = 'ActualBalance'
-SENSOR_UNBILLEDAMOUNT = 'UnbilledAmount'
-SENSOR_BILLTOTALAMOUNT = 'BillTotalAmount'
-SENSOR_BILLOVERDUEAMOUNT  = 'BillOverDueAmount'
 SENSOR_DOLLARVALUEUSAGE =  'DollarValueUsage'
 SENSOR_KILOWATTHOURUSAGE = 'KilowattHourUsage'
 
-POSSIBLE_MONITORED = [ SENSOR_ESTIMATEDBALANCE, SENSOR_USAGEDAYSREMAINING, SENSOR_AVERAGEDAILYUSAGE, SENSOR_AMOUNTOWED,
-                        SENSOR_ACTUALBALANCE, SENSOR_UNBILLEDAMOUNT, SENSOR_BILLTOTALAMOUNT, SENSOR_BILLOVERDUEAMOUNT,
-                        SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE]
+POSSIBLE_MONITORED = [ SENSOR_ESTIMATEDBALANCE, SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE]
 
 DEFAULT_MONITORED = POSSIBLE_MONITORED
 
@@ -100,9 +91,7 @@ class AuroraAccountSensor(SensorEntity):
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement."""
-        if self._sensor == SENSOR_USAGEDAYSREMAINING:   
-            return TIME_DAYS
-        elif self._sensor == SENSOR_KILOWATTHOURUSAGE:
+        if self._sensor == SENSOR_KILOWATTHOURUSAGE:
             return ENERGY_KILO_WATT_HOUR
         else:
             return CURRENCY_DOLLAR
@@ -114,6 +103,17 @@ class AuroraAccountSensor(SensorEntity):
             return self._data.DollarValueUsage
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:   
             return self._data.KilowattHourUsage
+        elif self._sensor == SENSOR_ESTIMATEDBALANCE:   
+            attributes = {}
+            attributes['Amount Owed'] = self._data.AmountOwed
+            attributes['Average Daily Usage'] = self._data.AverageDailyUsage
+            attributes['Usage Days Remaining'] = self._data.UsageDaysRemaining
+            attributes['Actual Balance'] = self._data.ActualBalance
+            attributes['Unbilled Amount'] = self._data.UnbilledAmount
+            attributes['Bill Total Amount'] = self._data.BillTotalAmount
+            attributes['Number Of Unpaid Bills'] = self._data.NumberOfUnpaidBills
+            attributes['Bill Overdue Amount'] = self._data.BillOverDueAmount
+            return attributes
 
     def update(self):
         try:
@@ -128,20 +128,6 @@ class AuroraAccountSensor(SensorEntity):
         """Collect updated data from Aurora+ API."""
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
             self._state = self._data.EstimatedBalance
-        elif self._sensor == SENSOR_USAGEDAYSREMAINING:    
-            self._state = self._data.UsageDaysRemaining
-        elif self._sensor == SENSOR_AVERAGEDAILYUSAGE:
-            self._state = self._data.AverageDailyUsage
-        elif self._sensor == SENSOR_AMOUNTOWED:    
-            self._state = self._data.AmountOwed
-        elif self._sensor == SENSOR_ACTUALBALANCE:    
-            self._state = self._data.ActualBalance
-        elif self._sensor == SENSOR_UNBILLEDAMOUNT:    
-            self._state = self._data.UnbilledAmount
-        elif self._sensor == SENSOR_BILLTOTALAMOUNT: 
-            self._state = self._data.BillTotalAmount
-        elif self._sensor == SENSOR_BILLOVERDUEAMOUNT:       
-            self._state = self._data.BillOverDueAmount
         elif self._sensor == SENSOR_DOLLARVALUEUSAGE:       
             self._state = round(self._data.DollarValueUsage['Total'],2)
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:       
