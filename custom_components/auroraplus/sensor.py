@@ -14,8 +14,7 @@ from homeassistant.const import (
     CONF_MONITORED_CONDITIONS,
     CURRENCY_DOLLAR,
     ENERGY_KILO_WATT_HOUR,
-    CONF_SCAN_INTERVAL,
-    TIME_DAYS
+    CONF_SCAN_INTERVAL
 )
 import homeassistant.helpers.config_validation as cv
 
@@ -51,18 +50,19 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     name = config.get(CONF_NAME)
 
     try:
-        auroraplus.api(username, password)
+        AuroraPlus = auroraplus.api()
+        AuroraPlus.auth(username, password)
     except OSError as err:
         _LOGGER.error("Connection to Aurora+ failed: %s", err)
-    
+
     for sensor in config.get(CONF_MONITORED_CONDITIONS):
-        add_entities([AuroraAccountSensor(username, password, sensor, name)], True)
+        add_entities([AuroraSensor(username, password, sensor, name, AuroraPlus)], True)
 
 
-class AuroraAccountSensor(SensorEntity):
+class AuroraSensor(SensorEntity):
     """Representation of a Aurora+ sensor."""
 
-    def __init__(self, username, password, sensor, name):
+    def __init__(self, username, password, sensor, name, auroraplus):
         """Initialize the Aurora+ sensor."""
         self._username = username
         self._password = password
@@ -71,7 +71,7 @@ class AuroraAccountSensor(SensorEntity):
         self._state = None
         self._unit_of_measurement = None
         self._attributes = {}
-        self._data = None
+        self._session = auroraplus
 
     @property
     def name(self):
@@ -100,37 +100,37 @@ class AuroraAccountSensor(SensorEntity):
     def extra_state_attributes(self):
         """Return device state attributes."""
         if self._sensor == SENSOR_DOLLARVALUEUSAGE:   
-            return self._data.DollarValueUsage
+            return self._session.DollarValueUsage
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:   
-            return self._data.KilowattHourUsage
+            return self._session.KilowattHourUsage
         elif self._sensor == SENSOR_ESTIMATEDBALANCE:   
             attributes = {}
-            attributes['Amount Owed'] = self._data.AmountOwed
-            attributes['Average Daily Usage'] = self._data.AverageDailyUsage
-            attributes['Usage Days Remaining'] = self._data.UsageDaysRemaining
-            attributes['Actual Balance'] = self._data.ActualBalance
-            attributes['Unbilled Amount'] = self._data.UnbilledAmount
-            attributes['Bill Total Amount'] = self._data.BillTotalAmount
-            attributes['Number Of Unpaid Bills'] = self._data.NumberOfUnpaidBills
-            attributes['Bill Overdue Amount'] = self._data.BillOverDueAmount
+            attributes['Amount Owed'] = self._session.AmountOwed
+            attributes['Average Daily Usage'] = self._session.AverageDailyUsage
+            attributes['Usage Days Remaining'] = self._session.UsageDaysRemaining
+            attributes['Actual Balance'] = self._session.ActualBalance
+            attributes['Unbilled Amount'] = self._session.UnbilledAmount
+            attributes['Bill Total Amount'] = self._session.BillTotalAmount
+            attributes['Number Of Unpaid Bills'] = self._session.NumberOfUnpaidBills
+            attributes['Bill Overdue Amount'] = self._session.BillOverDueAmount
             return attributes
 
     def update(self):
         try:
-            AuroraPlus = auroraplus.api(self._username , self._password)
-            AuroraPlus.getcurrent()
+            self._session.getcurrent()
             if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_DOLLARVALUEUSAGE:     
-                AuroraPlus.getsummary()
-            self._data = AuroraPlus
+                self._session.getsummary()
+            self._data = self._session
+            self._data = self._session.close()
         except OSError as err:
             _LOGGER.error("Updating Aurora+ failed: %s", err)
 
         """Collect updated data from Aurora+ API."""
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
-            self._state = self._data.EstimatedBalance
+            self._state = self._session.EstimatedBalance
         elif self._sensor == SENSOR_DOLLARVALUEUSAGE:       
-            self._state = round(self._data.DollarValueUsage['Total'],2)
+            self._state = round(self._session.DollarValueUsage['Total'],2)
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:       
-            self._state = round(self._data.KilowattHourUsage['Total'],2)
+            self._state = round(self._session.KilowattHourUsage['Total'],2)
         else:
             _LOGGER.error("Unknown sensor type found")
