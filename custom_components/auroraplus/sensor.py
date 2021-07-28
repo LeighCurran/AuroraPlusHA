@@ -133,4 +133,4 @@ class AuroraSensor(SensorEntity):
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:       
             self._state = round(self._session.KilowattHourUsage['Total'],2)
         else:
-            _LOGGER.error("Unknown sensor type found")
+            _LOGGER.error("Unknown sensor type found") 
