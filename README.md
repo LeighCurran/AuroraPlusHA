@@ -16,7 +16,7 @@ Using *YAML*: add `auroraplus` platform to your sensor configuration in `configu
 sensor:
   - platform: auroraplus
     name: "Power Sensor"
-    username: username@emial.com
+    username: username@email.com
     password: Password
     scan_interval:
       hours: 2
