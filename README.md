@@ -8,4 +8,17 @@ The Aurora+ integration adds support for retriving data from the Aurora+ API.
 
 To use the Aurora+ integration you need a valid account with Aurora.
 
-Usage:
+## Configuration
+Using *YAML*: add `auroraplus` platform to your sensor configuration in `configuration.yaml`. Example:
+
+```yaml
+# Example configuration.yaml entry
+sensor:
+  - platform: auroraplus
+    name: "Power Sensor"
+    username: username@emial.com
+    password: Password
+    scan_interval:
+      hours: 2
+```
+Note: Name ans scan_interval are optional. If scan_interval is not set a default value of 1 hours will be used. Most Aurora+ data is updated daily.
