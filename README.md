@@ -4,9 +4,19 @@
 
 # Aurora+ for Home Assistant
 
-The Aurora+ integration adds support for retriving data from the Aurora+ API.
+The Aurora+ integration adds support for retriving data from the Aurora+ API such as:
 
-To use the Aurora+ integration you need a valid account with Aurora.
+- EstimatedBalance - This is shown in the Aurora+ app as 'Balance'
+- UsageDaysRemaining - This is shown in the Aurora+ app as 'Days Prepaid'
+- AverageDailyUsage
+- AmountOwed
+- ActualBalance
+- UnbilledAmount
+- BillTotalAmount
+- NumberOfUnpaidBills
+- BillOverDueAmount
+
+Note: To use the Aurora+ integration you need a valid account with Aurora.
 
 ## Configuration
 Using *YAML*: add `auroraplus` platform to your sensor configuration in `configuration.yaml`. Example:
