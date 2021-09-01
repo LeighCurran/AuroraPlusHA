@@ -23,6 +23,7 @@ _LOGGER = logging.getLogger(__name__)
 SENSOR_ESTIMATEDBALANCE = 'EstimatedBalance'
 SENSOR_DOLLARVALUEUSAGE =  'DollarValueUsage'
 SENSOR_KILOWATTHOURUSAGE = 'KilowattHourUsage'
+MEASUREMENT = 'measurement'
 
 POSSIBLE_MONITORED = [ SENSOR_ESTIMATEDBALANCE, SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE]
 
@@ -82,6 +83,11 @@ class AuroraSensor(SensorEntity):
     def state(self):
         """Return the state of the sensor."""
         return self._state
+
+    @property
+    def state_class(self):
+        if self._sensor == SENSOR_KILOWATTHOURUSAGE:
+            return MEASUREMENT    
 
     @property
     def icon(self):
