@@ -6,15 +6,17 @@
 
 The Aurora+ integration adds support for retriving data from the Aurora+ API such as:
 
-- EstimatedBalance - This is shown in the Aurora+ app as 'Balance'
-- UsageDaysRemaining - This is shown in the Aurora+ app as 'Days Prepaid'
-- AverageDailyUsage
-- AmountOwed
-- ActualBalance
-- UnbilledAmount
-- BillTotalAmount
-- NumberOfUnpaidBills
-- BillOverDueAmount
+- Estimated Balance - This is shown in the Aurora+ app as 'Balance'
+- Usage Days Remaining - This is shown in the Aurora+ app as 'Days Prepaid'
+- Average Daily Usage
+- Amount Owed
+- Actual Balance
+- Unbilled Amount
+- BillTotal Amount
+- Number Of Unpaid Bills
+- Bill Over Due Amount
+- Kilowatt Hour Usage
+- Tarrifs
 
 Note: To use the Aurora+ integration you need a valid account with Aurora.
 
@@ -30,5 +32,11 @@ sensor:
     password: Password
     scan_interval:
       hours: 2
+    monitored_conditions: 
+      - 'T31'
+      - 'T41'
+      - 'EstimatedBalance'
+      - 'DollarValueUsage'
+      - 'KilowattHourUsage'
 ```
-Note: Name ans scan_interval are optional. If scan_interval is not set a default value of 1 hours will be used. Most Aurora+ data is updated daily.
+Note: Name, scan_interval and  monitored_conditions are optional. If scan_interval is not set a default value of 1 hours will be used. Most Aurora+ data is updated daily.
