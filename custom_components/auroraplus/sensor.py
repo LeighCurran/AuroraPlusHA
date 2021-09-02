@@ -7,14 +7,14 @@ import voluptuous as vol
 
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
 from homeassistant.const import (
-    ATTR_NAME,
     CONF_USERNAME,
     CONF_PASSWORD,
     CONF_NAME,
     CONF_MONITORED_CONDITIONS,
     CURRENCY_DOLLAR,
     ENERGY_KILO_WATT_HOUR,
-    CONF_SCAN_INTERVAL
+    CONF_SCAN_INTERVAL,
+    DEVICE_CLASS_ENERGY
 )
 import homeassistant.helpers.config_validation as cv
 
@@ -23,9 +23,11 @@ _LOGGER = logging.getLogger(__name__)
 SENSOR_ESTIMATEDBALANCE = 'EstimatedBalance'
 SENSOR_DOLLARVALUEUSAGE =  'DollarValueUsage'
 SENSOR_KILOWATTHOURUSAGE = 'KilowattHourUsage'
-MEASUREMENT = 'measurement'
+SENSOR_T41 = 'T41'
+SENSOR_T31 = 'T31'
+TOTAL_INCREASING = 'total_increasing'
 
-POSSIBLE_MONITORED = [ SENSOR_ESTIMATEDBALANCE, SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE]
+POSSIBLE_MONITORED = [ SENSOR_ESTIMATEDBALANCE, SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE, SENSOR_T41, SENSOR_T31 ]
 
 DEFAULT_MONITORED = POSSIBLE_MONITORED
 
@@ -76,38 +78,42 @@ class AuroraSensor(SensorEntity):
 
     @property
     def name(self):
-        """Return the name of the sensor."""
         return self._name
 
     @property
     def state(self):
-        """Return the state of the sensor."""
         return self._state
 
     @property
     def state_class(self):
-        if self._sensor == SENSOR_KILOWATTHOURUSAGE:
-            return MEASUREMENT    
+        if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_T41 or self._sensor == SENSOR_T31:
+            return TOTAL_INCREASING
 
     @property
+    def device_class(self):
+        if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_T41 or self._sensor == SENSOR_T31:
+            return DEVICE_CLASS_ENERGY
+  
+    @property
     def icon(self):
-        """Return the icon to use in the frontend."""
         return "mdi:power-socket-au"
 
     @property
     def unit_of_measurement(self):
-        """Return the unit of measurement."""
-        if self._sensor == SENSOR_KILOWATTHOURUSAGE:
+        if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_T41 or self._sensor == SENSOR_T31:
             return ENERGY_KILO_WATT_HOUR
         else:
             return CURRENCY_DOLLAR
 
     @property
     def extra_state_attributes(self):
-        """Return device state attributes."""
         if self._sensor == SENSOR_DOLLARVALUEUSAGE:   
             return self._session.DollarValueUsage
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:   
+            return self._session.KilowattHourUsage
+        elif self._sensor == SENSOR_T41:   
+            return self._session.KilowattHourUsage
+        elif self._sensor == SENSOR_T31:   
             return self._session.KilowattHourUsage
         elif self._sensor == SENSOR_ESTIMATEDBALANCE:   
             attributes = {}
@@ -124,7 +130,7 @@ class AuroraSensor(SensorEntity):
     def update(self):
         try:
             self._session.getcurrent()
-            if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_DOLLARVALUEUSAGE:     
+            if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_DOLLARVALUEUSAGE or self._sensor == SENSOR_T41 or self._sensor == SENSOR_T31:     
                 self._session.getsummary()
             self._data = self._session
             self._data = self._session.close()
@@ -138,5 +144,9 @@ class AuroraSensor(SensorEntity):
             self._state = round(self._session.DollarValueUsage['Total'],2)
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:       
             self._state = round(self._session.KilowattHourUsage['Total'],2)
+        elif self._sensor == SENSOR_T41:       
+            self._state = round(self._session.KilowattHourUsage['T41'],2)
+        elif self._sensor == SENSOR_T31:       
+            self._state = round(self._session.KilowattHourUsage['T31'],2)
         else:
-            _LOGGER.error("Unknown sensor type found") 
+            _LOGGER.error("Unknown sensor type found")
