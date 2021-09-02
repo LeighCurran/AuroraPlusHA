@@ -39,4 +39,4 @@ sensor:
       - 'DollarValueUsage'
       - 'KilowattHourUsage'
 ```
-Note: Name, scan_interval and  monitored_conditions are optional. If scan_interval is not set a default value of 1 hours will be used. Most Aurora+ data is updated daily.
+Note: Name, scan_interval and monitored_conditions are optional. If scan_interval is not set a default value of 1 hours will be used. If monitored_conditions is not setall sensors will be added to Home Assistant. Most Aurora+ data is updated daily.
