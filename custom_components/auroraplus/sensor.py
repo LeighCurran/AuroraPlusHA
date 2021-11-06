@@ -52,10 +52,12 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     try:
         AuroraPlus = auroraplus.api()
         AuroraPlus.auth(username, password)
+        _LOGGER.debug("Error: %s", AuroraPlus.Error)
     except OSError as err:
         _LOGGER.error("Connection to Aurora+ failed: %s", err)
 
     for sensor in config.get(CONF_MONITORED_CONDITIONS):
+        _LOGGER.debug("Adding sensor: %s", sensor)
         add_entities([AuroraSensor(username, password, sensor, name, AuroraPlus)], True)
 
 
@@ -117,6 +119,7 @@ class AuroraSensor(SensorEntity):
 
     def update(self):
         try:
+            _LOGGER.debug("Updating sensor: %s", self._sensor)
             self._session.getcurrent()
             if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_DOLLARVALUEUSAGE:     
                 self._session.getsummary()
