@@ -50,8 +50,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     name = config.get(CONF_NAME)
 
     try:
-        AuroraPlus = auroraplus.api()
-        AuroraPlus.auth(username, password)
+        AuroraPlus = auroraplus.api(username, password)
         _LOGGER.debug("Error: %s", AuroraPlus.Error)
     except OSError as err:
         _LOGGER.error("Connection to Aurora+ failed: %s", err)
@@ -124,7 +123,6 @@ class AuroraSensor(SensorEntity):
             if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_DOLLARVALUEUSAGE:     
                 self._session.getsummary()
             self._data = self._session
-            self._data = self._session.close()
         except OSError as err:
             _LOGGER.error("Updating Aurora+ failed: %s", err)
 
