@@ -31,4 +31,4 @@ sensor:
     scan_interval:
       hours: 2
 ```
-Note: Name ans scan_interval are optional. If scan_interval is not set a default value of 1 hours will be used. Most Aurora+ data is updated daily.
+Note: Name and scan_interval are optional. If scan_interval is not set a default value of 1 hours will be used. Most Aurora+ data is updated daily.
