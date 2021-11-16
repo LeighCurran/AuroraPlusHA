@@ -7,28 +7,30 @@ import voluptuous as vol
 
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
 from homeassistant.const import (
-    ATTR_NAME,
     CONF_USERNAME,
     CONF_PASSWORD,
     CONF_NAME,
     CONF_MONITORED_CONDITIONS,
     CURRENCY_DOLLAR,
     ENERGY_KILO_WATT_HOUR,
-    CONF_SCAN_INTERVAL
+    CONF_SCAN_INTERVAL,
+    DEVICE_CLASS_MONETARY,
+    DEVICE_CLASS_ENERGY
+
 )
 import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
-SENSOR_ESTIMATEDBALANCE = 'EstimatedBalance'
-SENSOR_DOLLARVALUEUSAGE =  'DollarValueUsage'
-SENSOR_KILOWATTHOURUSAGE = 'KilowattHourUsage'
+SENSOR_ESTIMATEDBALANCE = 'Estimated Balance'
+SENSOR_DOLLARVALUEUSAGE =  'Dollar Value Usage'
+SENSOR_KILOWATTHOURUSAGE = 'Kilowatt Hour Usage'
 
 POSSIBLE_MONITORED = [ SENSOR_ESTIMATEDBALANCE, SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE]
 
 DEFAULT_MONITORED = POSSIBLE_MONITORED
 
-DEFAULT_NAME = 'AuroraPlus'
+DEFAULT_NAME = 'Aurora+'
 
 DEFAULT_SCAN_INTERVAL = timedelta(hours=1)
 
@@ -85,17 +87,19 @@ class AuroraSensor(SensorEntity):
         return self._state
 
     @property
-    def icon(self):
-        """Return the icon to use in the frontend."""
-        return "mdi:power-socket-au"
-
-    @property
     def unit_of_measurement(self):
         """Return the unit of measurement."""
         if self._sensor == SENSOR_KILOWATTHOURUSAGE:
             return ENERGY_KILO_WATT_HOUR
         else:
             return CURRENCY_DOLLAR
+    
+    @property
+    def device_class(self):
+        if self._sensor == SENSOR_KILOWATTHOURUSAGE:
+            return DEVICE_CLASS_ENERGY
+        else:
+            return DEVICE_CLASS_MONETARY
 
     @property
     def extra_state_attributes(self):
