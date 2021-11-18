@@ -5,7 +5,13 @@ import logging
 import auroraplus
 import voluptuous as vol
 
-from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
+from homeassistant.components.sensor import (
+    PLATFORM_SCHEMA, 
+    STATE_CLASS_TOTAL,
+    STATE_CLASS_MEASUREMENT,
+    SensorEntity
+)
+
 from homeassistant.const import (
     CONF_USERNAME,
     CONF_PASSWORD,
@@ -15,9 +21,9 @@ from homeassistant.const import (
     ENERGY_KILO_WATT_HOUR,
     CONF_SCAN_INTERVAL,
     DEVICE_CLASS_MONETARY,
-    DEVICE_CLASS_ENERGY
-
+    DEVICE_CLASS_ENERGY,
 )
+
 import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,7 +32,7 @@ SENSOR_ESTIMATEDBALANCE = 'Estimated Balance'
 SENSOR_DOLLARVALUEUSAGE =  'Dollar Value Usage'
 SENSOR_KILOWATTHOURUSAGE = 'Kilowatt Hour Usage'
 
-POSSIBLE_MONITORED = [ SENSOR_ESTIMATEDBALANCE, SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE]
+POSSIBLE_MONITORED = [SENSOR_ESTIMATEDBALANCE, SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE]
 
 DEFAULT_MONITORED = POSSIBLE_MONITORED
 
@@ -71,10 +77,10 @@ class AuroraSensor(SensorEntity):
         self._password = password
         self._name = name + ' ' + sensor
         self._sensor = sensor
-        self._state = None
         self._unit_of_measurement = None
-        self._attributes = {}
+        self._state = None
         self._session = auroraplus
+        self._uniqueid = self._name
 
     @property
     def name(self):
@@ -85,6 +91,27 @@ class AuroraSensor(SensorEntity):
     def state(self):
         """Return the state of the sensor."""
         return self._state
+    
+    @property
+    def state_class(self):
+        """Return the state class of the sensor."""
+        if self._sensor == SENSOR_ESTIMATEDBALANCE:
+            return STATE_CLASS_MEASUREMENT
+        else:
+            return STATE_CLASS_TOTAL
+
+    @property
+    def device_class(self):
+        """Return device class fo the sensor."""
+        if self._sensor == SENSOR_KILOWATTHOURUSAGE:
+            return DEVICE_CLASS_ENERGY
+        else:
+            return DEVICE_CLASS_MONETARY
+
+    @property
+    def unique_id(self):
+        """Return the unique_id of the sensor."""
+        return self._uniqueid
 
     @property
     def unit_of_measurement(self):
@@ -93,13 +120,6 @@ class AuroraSensor(SensorEntity):
             return ENERGY_KILO_WATT_HOUR
         else:
             return CURRENCY_DOLLAR
-    
-    @property
-    def device_class(self):
-        if self._sensor == SENSOR_KILOWATTHOURUSAGE:
-            return DEVICE_CLASS_ENERGY
-        else:
-            return DEVICE_CLASS_MONETARY
 
     @property
     def extra_state_attributes(self):
