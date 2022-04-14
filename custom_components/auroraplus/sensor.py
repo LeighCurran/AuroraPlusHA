@@ -158,7 +158,7 @@ class AuroraSensor(SensorEntity):
 
         """Collect updated data from Aurora+ API."""
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
-            self._state = self._session.EstimatedBalance
+            self._state = round(float(self._session.EstimatedBalance),self._rounding)
         elif self._sensor == SENSOR_DOLLARVALUEUSAGE:       
             self._state = round(self._session.DollarValueUsage['Total'],self._rounding)
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:       
