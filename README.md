@@ -30,5 +30,6 @@ sensor:
     password: Password
     scan_interval:
       hours: 2
+    rounding: 1
 ```
 Note: Name and scan_interval are optional. If scan_interval is not set a default value of 1 hours will be used. Most Aurora+ data is updated daily.
