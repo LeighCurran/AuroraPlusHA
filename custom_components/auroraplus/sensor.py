@@ -24,6 +24,8 @@ from homeassistant.const import (
     DEVICE_CLASS_ENERGY,
 )
 
+CONF_ROUNDING = "rounding"
+
 import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,6 +39,7 @@ POSSIBLE_MONITORED = [SENSOR_ESTIMATEDBALANCE, SENSOR_DOLLARVALUEUSAGE, SENSOR_K
 DEFAULT_MONITORED = POSSIBLE_MONITORED
 
 DEFAULT_NAME = 'Aurora+'
+DEFAULT_ROUNDING = 2
 
 DEFAULT_SCAN_INTERVAL = timedelta(hours=1)
 
@@ -45,6 +48,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Required(CONF_USERNAME): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Optional(CONF_ROUNDING, default=DEFAULT_ROUNDING): vol.Coerce(int),
         vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
         vol.Optional(CONF_MONITORED_CONDITIONS, default=DEFAULT_MONITORED):
             vol.All(cv.ensure_list, [vol.In(POSSIBLE_MONITORED)])
@@ -56,6 +60,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     username = config.get(CONF_USERNAME)
     password = config.get(CONF_PASSWORD)
     name = config.get(CONF_NAME)
+    rounding = config.get(CONF_ROUNDING)
 
     try:
         AuroraPlus = auroraplus.api(username, password)
@@ -65,13 +70,13 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
     for sensor in config.get(CONF_MONITORED_CONDITIONS):
         _LOGGER.debug("Adding sensor: %s", sensor)
-        add_entities([AuroraSensor(username, password, sensor, name, AuroraPlus)], True)
+        add_entities([AuroraSensor(username, password, sensor, name, AuroraPlus, rounding)], True)
 
 
 class AuroraSensor(SensorEntity):
     """Representation of a Aurora+ sensor."""
 
-    def __init__(self, username, password, sensor, name, auroraplus):
+    def __init__(self, username, password, sensor, name, auroraplus, rounding):
         """Initialize the Aurora+ sensor."""
         self._username = username
         self._password = password
@@ -81,6 +86,7 @@ class AuroraSensor(SensorEntity):
         self._state = None
         self._session = auroraplus
         self._uniqueid = self._name
+        self._rounding = rounding
 
     @property
     def name(self):
@@ -154,8 +160,8 @@ class AuroraSensor(SensorEntity):
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
             self._state = self._session.EstimatedBalance
         elif self._sensor == SENSOR_DOLLARVALUEUSAGE:       
-            self._state = round(self._session.DollarValueUsage['Total'],2)
+            self._state = round(self._session.DollarValueUsage['Total'],self._rounding)
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:       
-            self._state = round(self._session.KilowattHourUsage['Total'],2)
+            self._state = round(self._session.KilowattHourUsage['Total'],self._rounding)
         else:
             _LOGGER.error("Unknown sensor type found") 
