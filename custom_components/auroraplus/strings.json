@@ -1,0 +1,36 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "username": "Username",
+          "password": "Password",
+          "name": "Name of the sensor.",
+          "rounding": "rounding of sensor values.",
+          "scan_interval": "Interval to update sensors (Hours)."
+        },
+        "description": "Enter your Aurora+ credentials.",
+        "title": "Authentication."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "data": {
+          "username": "Change username.",
+          "password": "Change password.",
+          "name": "Change name of sensor.",
+          "rounding": "Change rounding of sensor values.",
+          "scan_interval": "Change the interval sensors update (Hours)."
+        }
+      }
+    }
+  },
+  "error": {
+    "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+    "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+    "unknown": "[%key:common::config_flow::error::unknown%]"
+  }
+}

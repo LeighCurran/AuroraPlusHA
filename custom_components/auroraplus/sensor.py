@@ -1,119 +1,155 @@
-"""Support for Aurora+"""
-from datetime import timedelta
+"""Aurora+ sensor platform."""
 import logging
+from typing import Callable, Optional
 
-import auroraplus
+from .const import CONF_ROUNDING, DOMAIN, SENSOR_ESTIMATEDBALANCE, SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE, POSSIBLE_MONITORED
+
 import voluptuous as vol
+import auroraplus
 
-from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
+from homeassistant import config_entries, core
+
+from homeassistant.components.sensor import (
+    STATE_CLASS_TOTAL,
+    STATE_CLASS_MEASUREMENT,
+    SensorEntity
+)
+
 from homeassistant.const import (
+    CONF_NAME,
     CONF_USERNAME,
     CONF_PASSWORD,
-    CONF_NAME,
-    CONF_MONITORED_CONDITIONS,
     CURRENCY_DOLLAR,
     ENERGY_KILO_WATT_HOUR,
-    CONF_SCAN_INTERVAL,
-    DEVICE_CLASS_ENERGY
+    DEVICE_CLASS_MONETARY,
+    DEVICE_CLASS_ENERGY,
 )
+
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.typing import (
+    ConfigType,
+    DiscoveryInfoType,
+    HomeAssistantType,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-SENSOR_ESTIMATEDBALANCE = 'EstimatedBalance'
-SENSOR_DOLLARVALUEUSAGE =  'DollarValueUsage'
-SENSOR_KILOWATTHOURUSAGE = 'KilowattHourUsage'
-SENSOR_T41 = 'T41'
-SENSOR_T31 = 'T31'
-TOTAL_INCREASING = 'total_increasing'
-
-POSSIBLE_MONITORED = [ SENSOR_ESTIMATEDBALANCE, SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE, SENSOR_T41, SENSOR_T31 ]
-
-DEFAULT_MONITORED = POSSIBLE_MONITORED
-
-DEFAULT_NAME = 'AuroraPlus'
-
-DEFAULT_SCAN_INTERVAL = timedelta(hours=1)
-
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
-    {
-        vol.Required(CONF_USERNAME): cv.string,
-        vol.Required(CONF_PASSWORD): cv.string,
-        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
-        vol.Optional(CONF_MONITORED_CONDITIONS, default=DEFAULT_MONITORED):
-            vol.All(cv.ensure_list, [vol.In(POSSIBLE_MONITORED)])
-    }
-)
-
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up the Aurora+ platform for sensors."""
-    username = config.get(CONF_USERNAME)
-    password = config.get(CONF_PASSWORD)
-    name = config.get(CONF_NAME)
+def connect(username, password):
 
     try:
-        AuroraPlus = auroraplus.api()
-        AuroraPlus.auth(username, password)
-    except OSError as err:
-        _LOGGER.error("Connection to Aurora+ failed: %s", err)
+        aurora = auroraplus.api(username, password)
+        raised = True
+        return aurora
+    except Exception as e:
+        _LOGGER.error("Failed to connect during setup: %s", e)
 
-    for sensor in config.get(CONF_MONITORED_CONDITIONS):
-        add_entities([AuroraSensor(username, password, sensor, name, AuroraPlus)], True)
+    if not raised:
+        exit()
+
+async def async_setup_entry(hass: core.HomeAssistant,config_entry: config_entries.ConfigEntry,async_add_entities):
+
+    """Setup sensors from a config entry created in the integrations UI."""
+    config = hass.data[DOMAIN][config_entry.entry_id]
+    # Update our config
+    if config_entry.options:
+        config.update(config_entry.options)
+
+    """Set up the Aurora+ platform for sensors."""
+    username = config[CONF_USERNAME]
+    password = config[CONF_PASSWORD]
+    name = config[CONF_NAME]
+    rounding = config[CONF_ROUNDING]
+
+    aurora = await hass.async_add_executor_job(connect, username, password)
+
+    sensors = []
+    for sensor in POSSIBLE_MONITORED:
+        _LOGGER.debug("Adding sensor from UI: %s", sensor)
+        sensors.append(AuroraSensor(username, password, sensor, name, aurora, rounding))
+
+    if sensors:
+        async_add_entities(sensors, update_before_add=True)
+
+
+async def async_setup_platform(hass: HomeAssistantType,config: ConfigType,async_add_entities: Callable,discovery_info: Optional[DiscoveryInfoType] = None,) -> None:
+    """Set up the sensor platform from configuration.yaml."""
+    """Set up the Aurora+ platform for sensors."""
+    username = config[CONF_USERNAME]
+    password = config[CONF_PASSWORD]
+    name = config[CONF_NAME]
+    rounding = config[CONF_ROUNDING]
+
+    aurora = await hass.async_add_executor_job(connect, username, password)
+
+    sensors = []
+    for sensor in POSSIBLE_MONITORED:
+        _LOGGER.debug("Adding sensor from configuration.yaml: %s", sensor)
+        sensors.append(AuroraSensor(username, password, sensor, name, aurora, rounding))
+
+    if sensors:
+        async_add_entities(sensors, update_before_add=True)
 
 
 class AuroraSensor(SensorEntity):
     """Representation of a Aurora+ sensor."""
 
-    def __init__(self, username, password, sensor, name, auroraplus):
+    def __init__(self, username, password, sensor, name, aurora, rounding):
         """Initialize the Aurora+ sensor."""
         self._username = username
         self._password = password
         self._name = name + ' ' + sensor
         self._sensor = sensor
-        self._state = None
         self._unit_of_measurement = None
-        self._attributes = {}
-        self._session = auroraplus
+        self._state = None
+        self._session = aurora
+        self._uniqueid = self._name
+        self._rounding = rounding
 
     @property
-    def name(self):
+    def name(self) -> str:
+        """Return the name of the sensor."""
         return self._name
 
     @property
-    def state(self):
+    def state(self) -> str:
+        """Return the state of the sensor."""
         return self._state
 
     @property
     def state_class(self):
-        if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_T41 or self._sensor == SENSOR_T31:
-            return TOTAL_INCREASING
+        """Return the state class of the sensor."""
+        if self._sensor == SENSOR_ESTIMATEDBALANCE:
+            return STATE_CLASS_MEASUREMENT
+        else:
+            return STATE_CLASS_TOTAL
 
     @property
     def device_class(self):
-        if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_T41 or self._sensor == SENSOR_T31:
+        """Return device class fo the sensor."""
+        if self._sensor == SENSOR_KILOWATTHOURUSAGE:
             return DEVICE_CLASS_ENERGY
-  
+        else:
+            return DEVICE_CLASS_MONETARY
+
     @property
-    def icon(self):
-        return "mdi:power-socket-au"
+    def unique_id(self):
+        """Return the unique_id of the sensor."""
+        return self._uniqueid
 
     @property
     def unit_of_measurement(self):
-        if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_T41 or self._sensor == SENSOR_T31:
+        """Return the unit of measurement."""
+        if self._sensor == SENSOR_KILOWATTHOURUSAGE:
             return ENERGY_KILO_WATT_HOUR
         else:
             return CURRENCY_DOLLAR
 
     @property
     def extra_state_attributes(self):
+        """Return device state attributes."""
         if self._sensor == SENSOR_DOLLARVALUEUSAGE:   
             return self._session.DollarValueUsage
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:   
-            return self._session.KilowattHourUsage
-        elif self._sensor == SENSOR_T41:   
-            return self._session.KilowattHourUsage
-        elif self._sensor == SENSOR_T31:   
             return self._session.KilowattHourUsage
         elif self._sensor == SENSOR_ESTIMATEDBALANCE:   
             attributes = {}
@@ -129,24 +165,20 @@ class AuroraSensor(SensorEntity):
 
     def update(self):
         try:
+            _LOGGER.debug("Updating sensor: %s", self._sensor)
             self._session.getcurrent()
-            if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_DOLLARVALUEUSAGE or self._sensor == SENSOR_T41 or self._sensor == SENSOR_T31:     
+            if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_DOLLARVALUEUSAGE:     
                 self._session.getsummary()
             self._data = self._session
-            self._data = self._session.close()
-        except OSError as err:
+        except Exception as err:
             _LOGGER.error("Updating Aurora+ failed: %s", err)
 
         """Collect updated data from Aurora+ API."""
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
-            self._state = self._session.EstimatedBalance
+            self._state = round(float(self._session.EstimatedBalance),self._rounding)
         elif self._sensor == SENSOR_DOLLARVALUEUSAGE:       
-            self._state = round(self._session.DollarValueUsage['Total'],2)
+            self._state = round(self._session.DollarValueUsage['Total'],self._rounding)
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:       
-            self._state = round(self._session.KilowattHourUsage['Total'],2)
-        elif self._sensor == SENSOR_T41:       
-            self._state = round(self._session.KilowattHourUsage['T41'],2)
-        elif self._sensor == SENSOR_T31:       
-            self._state = round(self._session.KilowattHourUsage['T31'],2)
+            self._state = round(self._session.KilowattHourUsage['Total'],self._rounding)
         else:
-            _LOGGER.error("Unknown sensor type found")
+            _LOGGER.error("Unknown sensor type found") 
