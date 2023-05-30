@@ -32,9 +32,21 @@ _LOGGER = logging.getLogger(__name__)
 SENSOR_ESTIMATEDBALANCE = 'Estimated Balance'
 SENSOR_DOLLARVALUEUSAGE = 'Dollar Value Usage'
 SENSOR_KILOWATTHOURUSAGE = 'Kilowatt Hour Usage'
+SENSOR_KILOWATTHOURUSAGETARIFF = 'Kilowatt Hour Usage Tariff '
 
-POSSIBLE_MONITORED = [SENSOR_ESTIMATEDBALANCE,
-                      SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE]
+POSSIBLE_MONITORED = [
+    SENSOR_ESTIMATEDBALANCE,
+    SENSOR_DOLLARVALUEUSAGE,
+    SENSOR_KILOWATTHOURUSAGE,
+    SENSOR_KILOWATTHOURUSAGETARIFF + 'T31',
+    SENSOR_KILOWATTHOURUSAGETARIFF + 'T41',
+    SENSOR_KILOWATTHOURUSAGETARIFF + 'T61',
+    SENSOR_KILOWATTHOURUSAGETARIFF + 'T62',
+    SENSOR_KILOWATTHOURUSAGETARIFF + 'T93PEAK',
+    SENSOR_KILOWATTHOURUSAGETARIFF + 'T93OFFPEAK',
+    SENSOR_KILOWATTHOURUSAGETARIFF + 'T140',
+
+]
 
 DEFAULT_MONITORED = POSSIBLE_MONITORED
 
@@ -111,10 +123,10 @@ class AuroraSensor(SensorEntity):
     @property
     def device_class(self):
         """Return device class fo the sensor."""
-        if self._sensor == SENSOR_KILOWATTHOURUSAGE:
-            return DEVICE_CLASS_ENERGY
-        else:
+        if self._sensor == SENSOR_ESTIMATEDBALANCE:
             return DEVICE_CLASS_MONETARY
+        else:
+            return DEVICE_CLASS_ENERGY
 
     @property
     def unique_id(self):
@@ -124,10 +136,10 @@ class AuroraSensor(SensorEntity):
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement."""
-        if self._sensor == SENSOR_KILOWATTHOURUSAGE:
-            return ENERGY_KILO_WATT_HOUR
-        else:
+        if self._sensor == SENSOR_ESTIMATEDBALANCE:
             return CURRENCY_DOLLAR
+        else:
+            return ENERGY_KILO_WATT_HOUR
 
     @property
     def extra_state_attributes(self):
@@ -168,5 +180,10 @@ class AuroraSensor(SensorEntity):
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:
             self._state = round(
                 self._session.KilowattHourUsage['Total'], self._rounding)
+        elif self._sensor.startswith(SENSOR_KILOWATTHOURUSAGETARIFF):
+            tariff = self._sensor.removeprefix(SENSOR_KILOWATTHOURUSAGETARIFF)
+            self._state = self._session.KilowattHourUsage.get(tariff)
+            if self._state:
+                self._state = round(self._state, self._rounding)
         else:
             _LOGGER.error("Unknown sensor type found")
