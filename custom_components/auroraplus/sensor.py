@@ -1,4 +1,5 @@
 """Support for Aurora+"""
+import homeassistant.helpers.config_validation as cv
 from datetime import timedelta
 import logging
 
@@ -26,15 +27,15 @@ from homeassistant.const import (
 
 CONF_ROUNDING = "rounding"
 
-import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
 SENSOR_ESTIMATEDBALANCE = 'Estimated Balance'
-SENSOR_DOLLARVALUEUSAGE =  'Dollar Value Usage'
+SENSOR_DOLLARVALUEUSAGE = 'Dollar Value Usage'
 SENSOR_KILOWATTHOURUSAGE = 'Kilowatt Hour Usage'
 
-POSSIBLE_MONITORED = [SENSOR_ESTIMATEDBALANCE, SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE]
+POSSIBLE_MONITORED = [SENSOR_ESTIMATEDBALANCE,
+                      SENSOR_DOLLARVALUEUSAGE, SENSOR_KILOWATTHOURUSAGE]
 
 DEFAULT_MONITORED = POSSIBLE_MONITORED
 
@@ -55,6 +56,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
+
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Set up the Aurora+ platform for sensors."""
     username = config.get(CONF_USERNAME)
@@ -70,7 +72,8 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
     for sensor in config.get(CONF_MONITORED_CONDITIONS):
         _LOGGER.debug("Adding sensor: %s", sensor)
-        add_entities([AuroraSensor(username, password, sensor, name, AuroraPlus, rounding)], True)
+        add_entities([AuroraSensor(username, password, sensor,
+                     name, AuroraPlus, rounding)], True)
 
 
 class AuroraSensor(SensorEntity):
@@ -130,11 +133,11 @@ class AuroraSensor(SensorEntity):
     @property
     def extra_state_attributes(self):
         """Return device state attributes."""
-        if self._sensor == SENSOR_DOLLARVALUEUSAGE:   
+        if self._sensor == SENSOR_DOLLARVALUEUSAGE:
             return self._session.DollarValueUsage
-        elif self._sensor == SENSOR_KILOWATTHOURUSAGE:   
+        elif self._sensor == SENSOR_KILOWATTHOURUSAGE:
             return self._session.KilowattHourUsage
-        elif self._sensor == SENSOR_ESTIMATEDBALANCE:   
+        elif self._sensor == SENSOR_ESTIMATEDBALANCE:
             attributes = {}
             attributes['Amount Owed'] = self._session.AmountOwed
             attributes['Average Daily Usage'] = self._session.AverageDailyUsage
@@ -150,7 +153,7 @@ class AuroraSensor(SensorEntity):
         try:
             _LOGGER.debug("Updating sensor: %s", self._sensor)
             self._session.getcurrent()
-            if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_DOLLARVALUEUSAGE:     
+            if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_DOLLARVALUEUSAGE:
                 self._session.getsummary()
             self._data = self._session
         except OSError as err:
@@ -158,10 +161,13 @@ class AuroraSensor(SensorEntity):
 
         """Collect updated data from Aurora+ API."""
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
-            self._state = round(float(self._session.EstimatedBalance),self._rounding)
-        elif self._sensor == SENSOR_DOLLARVALUEUSAGE:       
-            self._state = round(self._session.DollarValueUsage['Total'],self._rounding)
-        elif self._sensor == SENSOR_KILOWATTHOURUSAGE:       
-            self._state = round(self._session.KilowattHourUsage['Total'],self._rounding)
+            self._state = round(
+                float(self._session.EstimatedBalance), self._rounding)
+        elif self._sensor == SENSOR_DOLLARVALUEUSAGE:
+            self._state = round(
+                self._session.DollarValueUsage['Total'], self._rounding)
+        elif self._sensor == SENSOR_KILOWATTHOURUSAGE:
+            self._state = round(
+                self._session.KilowattHourUsage['Total'], self._rounding)
         else:
-            _LOGGER.error("Unknown sensor type found") 
+            _LOGGER.error("Unknown sensor type found")
