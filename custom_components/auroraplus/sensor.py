@@ -7,9 +7,8 @@ import auroraplus
 import voluptuous as vol
 
 from homeassistant.components.sensor import (
-    PLATFORM_SCHEMA, 
-    STATE_CLASS_TOTAL,
-    STATE_CLASS_MEASUREMENT,
+    PLATFORM_SCHEMA,
+    STATE_CLASS_TOTAL_INCREASING,
     SensorEntity
 )
 
@@ -100,14 +99,14 @@ class AuroraSensor(SensorEntity):
     def state(self):
         """Return the state of the sensor."""
         return self._state
-    
+
     @property
     def state_class(self):
         """Return the state class of the sensor."""
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
             return STATE_CLASS_MEASUREMENT
         else:
-            return STATE_CLASS_TOTAL
+            return STATE_CLASS_TOTAL_INCREASING
 
     @property
     def device_class(self):
