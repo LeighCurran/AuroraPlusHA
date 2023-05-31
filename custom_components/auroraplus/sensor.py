@@ -1,6 +1,6 @@
 """Support for Aurora+"""
 import homeassistant.helpers.config_validation as cv
-from datetime import timedelta
+import datetime
 import logging
 
 import auroraplus
@@ -8,7 +8,7 @@ import voluptuous as vol
 
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
-    STATE_CLASS_TOTAL_INCREASING,
+    STATE_CLASS_TOTAL,
     SensorEntity
 )
 
@@ -34,9 +34,12 @@ SENSOR_DOLLARVALUEUSAGE = 'Dollar Value Usage'
 SENSOR_KILOWATTHOURUSAGE = 'Kilowatt Hour Usage'
 SENSOR_KILOWATTHOURUSAGETARIFF = 'Kilowatt Hour Usage Tariff '
 
-POSSIBLE_MONITORED = [
+SENSORS_MONETARY = [
     SENSOR_ESTIMATEDBALANCE,
     SENSOR_DOLLARVALUEUSAGE,
+]
+
+SENSORS_ENERGY = [
     SENSOR_KILOWATTHOURUSAGE,
     SENSOR_KILOWATTHOURUSAGETARIFF + 'T31',
     SENSOR_KILOWATTHOURUSAGETARIFF + 'T41',
@@ -45,15 +48,16 @@ POSSIBLE_MONITORED = [
     SENSOR_KILOWATTHOURUSAGETARIFF + 'T93PEAK',
     SENSOR_KILOWATTHOURUSAGETARIFF + 'T93OFFPEAK',
     SENSOR_KILOWATTHOURUSAGETARIFF + 'T140',
-
 ]
+
+POSSIBLE_MONITORED = SENSORS_MONETARY + SENSORS_ENERGY
 
 DEFAULT_MONITORED = POSSIBLE_MONITORED
 
 DEFAULT_NAME = 'Aurora+'
 DEFAULT_ROUNDING = 2
 
-DEFAULT_SCAN_INTERVAL = timedelta(hours=1)
+DEFAULT_SCAN_INTERVAL = datetime.timedelta(hours=1)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -98,6 +102,7 @@ class AuroraSensor(SensorEntity):
         self._sensor = sensor
         self._unit_of_measurement = None
         self._state = None
+        self._last_reset = None
         self._session = auroraplus
         self._uniqueid = self._name
         self._rounding = rounding
@@ -113,17 +118,18 @@ class AuroraSensor(SensorEntity):
         return self._state
 
     @property
+    def last_reset(self):
+        return self._last_reset
+
+    @property
     def state_class(self):
         """Return the state class of the sensor."""
-        if self._sensor == SENSOR_ESTIMATEDBALANCE:
-            return STATE_CLASS_MEASUREMENT
-        else:
-            return STATE_CLASS_TOTAL_INCREASING
+        return STATE_CLASS_TOTAL
 
     @property
     def device_class(self):
         """Return device class fo the sensor."""
-        if self._sensor == SENSOR_ESTIMATEDBALANCE:
+        if self._sensor in SENSORS_MONETARY:
             return DEVICE_CLASS_MONETARY
         else:
             return DEVICE_CLASS_ENERGY
@@ -136,7 +142,7 @@ class AuroraSensor(SensorEntity):
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement."""
-        if self._sensor == SENSOR_ESTIMATEDBALANCE:
+        if self._sensor in SENSORS_MONETARY:
             return CURRENCY_DOLLAR
         else:
             return ENERGY_KILO_WATT_HOUR
@@ -161,16 +167,15 @@ class AuroraSensor(SensorEntity):
             return attributes
 
     def update(self):
+        """Collect updated data from Aurora+ API."""
         try:
             _LOGGER.debug("Updating sensor: %s", self._sensor)
             self._session.getcurrent()
-            if self._sensor == SENSOR_KILOWATTHOURUSAGE or self._sensor == SENSOR_DOLLARVALUEUSAGE:
-                self._session.getsummary()
+            self._session.getsummary()
             self._data = self._session
         except OSError as err:
             _LOGGER.error("Updating Aurora+ failed: %s", err)
-
-        """Collect updated data from Aurora+ API."""
+        self._old_state = self._state
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
             self._state = round(
                 float(self._session.EstimatedBalance), self._rounding)
@@ -187,3 +192,5 @@ class AuroraSensor(SensorEntity):
                 self._state = round(self._state, self._rounding)
         else:
             _LOGGER.error("Unknown sensor type found")
+        if self._old_state and self._state != self._old_state:
+            self._last_reset = datetime.datetime.now()
