@@ -12,6 +12,10 @@ from homeassistant.components.sensor import (
     SensorEntity
 )
 
+from homeassistant.components.recorder.models import (StatisticData,
+                                                      StatisticMetaData)
+from homeassistant.components.recorder.statistics import StatisticsRow
+
 from homeassistant.const import (
     CONF_USERNAME,
     CONF_PASSWORD,
@@ -25,6 +29,12 @@ from homeassistant.const import (
 )
 
 from homeassistant.util import Throttle
+
+from homeassistant_historical_sensor import (
+    HistoricalSensor,
+    HistoricalState,
+    PollUpdateMixin,
+)
 
 CONF_ROUNDING = "rounding"
 
@@ -42,7 +52,6 @@ SENSORS_MONETARY = [
 ]
 
 SENSORS_ENERGY = [
-    SENSOR_KILOWATTHOURUSAGE,
     SENSOR_KILOWATTHOURUSAGETARIFF + 'T31',
     SENSOR_KILOWATTHOURUSAGETARIFF + 'T41',
     SENSOR_KILOWATTHOURUSAGETARIFF + 'T61',
@@ -52,7 +61,7 @@ SENSORS_ENERGY = [
     SENSOR_KILOWATTHOURUSAGETARIFF + 'T140',
 ]
 
-POSSIBLE_MONITORED = SENSORS_MONETARY + SENSORS_ENERGY
+POSSIBLE_MONITORED = SENSORS_MONETARY + [SENSOR_KILOWATTHOURUSAGE]
 
 DEFAULT_MONITORED = POSSIBLE_MONITORED
 
@@ -101,6 +110,11 @@ async def async_setup_platform(hass, config,
                      sensor, name,
                      aurora_api, rounding)
         for sensor in config.get(CONF_MONITORED_CONDITIONS)
+    ] + [
+        AuroraHistoricalSensor(hass,
+                               sensor, name,
+                               aurora_api, rounding)
+        for sensor in SENSORS_ENERGY
     ],
         True)
 
@@ -226,11 +240,129 @@ class AuroraSensor(SensorEntity):
             self._state = round(
                 self._api.KilowattHourUsage['Total'], self._rounding)
         elif self._sensor.startswith(SENSOR_KILOWATTHOURUSAGETARIFF):
-            tariff = self._sensor.removeprefix(SENSOR_KILOWATTHOURUSAGETARIFF)
-            self._state = self._api.KilowattHourUsage.get(tariff)
-            if self._state:
-                self._state = round(self._state, self._rounding)
+            pass
+
         else:
             _LOGGER.error("Unknown sensor type found")
         if self._old_state and self._state != self._old_state:
             self._last_reset = datetime.datetime.now()
+
+
+class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
+    def __init__(self, hass, sensor, name, aurora_api, rounding):
+        """Initialize the Aurora+ sensor."""
+        self._hass = hass
+        self._name = name + ' ' + sensor
+        self._sensor = sensor
+        self._unit_of_measurement = None
+        self._attr_historical_states = []
+        self._api = aurora_api
+        self._uniqueid = self._name.replace(' ', '_').lower()
+        self._rounding = rounding
+        _LOGGER.debug("Created historical sensor %s", self._sensor)
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return self._name
+
+    # @property
+    # def state_class(self):
+    #     """Return the state class of the sensor."""
+    #     return STATE_CLASS_TOTAL
+
+    @property
+    def device_class(self):
+        """Return device class fo the sensor."""
+        if self._sensor in SENSORS_MONETARY:
+            return DEVICE_CLASS_MONETARY
+        else:
+            return DEVICE_CLASS_ENERGY
+
+    @property
+    def unique_id(self):
+        """Return the unique_id of the sensor."""
+        return self._uniqueid
+
+    @property
+    def statistic_id(self) -> str:
+        _LOGGER.debug("Statistic_id: %s",
+                      'sensor:' + self._uniqueid)
+        return 'sensor:' + self._uniqueid
+
+    @property
+    def unit_of_measurement(self):
+        """Return the unit of measurement."""
+        if self._sensor in SENSORS_MONETARY:
+            return CURRENCY_DOLLAR
+        else:
+            return ENERGY_KILO_WATT_HOUR
+
+    @property
+    def historical_states(self):
+        """Return the historical state of the sensor."""
+        _LOGGER.debug("Returning historical states for: %s %s",
+                      self._sensor, self._attr_historical_states)
+        return self._attr_historical_states
+
+    async def async_update_historical(self):
+        if self._sensor.startswith(SENSOR_KILOWATTHOURUSAGETARIFF):
+            tariff = self._sensor.removeprefix(SENSOR_KILOWATTHOURUSAGETARIFF)
+
+        await self._api.async_update()
+
+        metered_records = self._api.day.get(
+            'MeteredUsageRecords'
+        )
+        if not metered_records:
+            _LOGGER.warning(f"Empty daily records for {self._sensor}")
+            return
+        # _LOGGER.debug(f"MeteredUsageRecords: {metered_records}")
+
+        self._attr_historical_states = [
+            HistoricalState(
+                state=round(
+                    float(r['KilowattHourUsage'][tariff]),
+                    self._rounding
+                ),
+                dt=datetime.datetime.fromisoformat(r['StartTime'])
+            )
+            for r in metered_records
+            if r
+            and r.get('KilowattHourUsage')
+            and r.get('KilowattHourUsage').get(tariff)
+        ]
+        _LOGGER.debug("Done with historical states for: %s",
+                      self._sensor)
+
+    def get_statistic_metadata(self) -> StatisticMetaData:
+        _LOGGER.debug("Getting statistic meta for: %s",
+                      self._sensor)
+        meta = super().get_statistic_metadata()
+        meta["has_sum"] = True
+
+        return meta
+
+    async def async_calculate_statistic_data(
+        self,
+        hist_states: list[HistoricalState],
+        *,
+        latest: StatisticsRow | None = None,
+    ) -> list[StatisticData]:
+        accumulated = latest["sum"] if latest else 0
+
+        ret = []
+
+        for hs in hist_states:
+            accumulated = accumulated + hs.state
+            ret.append(
+                StatisticData(
+                    start=hs.dt,
+                    state=hs.state,
+                    sum=accumulated,
+                )
+            )
+
+        _LOGGER.debug("Calculated statistics for: %s, %s",
+                      self._sensor, ret)
+        return ret
