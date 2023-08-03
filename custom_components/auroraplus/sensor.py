@@ -24,6 +24,8 @@ from homeassistant.const import (
     DEVICE_CLASS_ENERGY,
 )
 
+from homeassistant.util import Throttle
+
 CONF_ROUNDING = "rounding"
 
 
@@ -72,7 +74,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
+async def async_setup_platform(hass, config,
+                               async_add_entities,
+                               discovery_info=None):
     """Set up the Aurora+ platform for sensors."""
     username = config.get(CONF_USERNAME)
     password = config.get(CONF_PASSWORD)
@@ -80,24 +84,33 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     rounding = config.get(CONF_ROUNDING)
 
     try:
-        AuroraPlus = auroraplus.api(username, password)
-        _LOGGER.debug("Error: %s", AuroraPlus.Error)
+        def aurora_init():
+            return auroraplus.api(username, password)
+        AuroraPlus = await hass.async_add_executor_job(
+            aurora_init
+        )
+        if AuroraPlus.Error:
+            _LOGGER.debug("Error: %s", AuroraPlus.Error)
     except OSError as err:
         _LOGGER.error("Connection to Aurora+ failed: %s", err)
 
-    for sensor in config.get(CONF_MONITORED_CONDITIONS):
-        _LOGGER.debug("Adding sensor: %s", sensor)
-        add_entities([AuroraSensor(username, password, sensor,
-                     name, AuroraPlus, rounding)], True)
+    async_add_entities([
+        AuroraSensor(hass,
+                     sensor, name,
+                     AuroraPlus, rounding)
+        for sensor in config.get(CONF_MONITORED_CONDITIONS)
+    ],
+        True)
+
+
 
 
 class AuroraSensor(SensorEntity):
     """Representation of a Aurora+ sensor."""
 
-    def __init__(self, username, password, sensor, name, auroraplus, rounding):
+    def __init__(self, hass, sensor, name, auroraplus, rounding):
         """Initialize the Aurora+ sensor."""
-        self._username = username
-        self._password = password
+        self._hass = hass
         self._name = name + ' ' + sensor
         self._sensor = sensor
         self._unit_of_measurement = None
@@ -106,6 +119,7 @@ class AuroraSensor(SensorEntity):
         self._session = auroraplus
         self._uniqueid = self._name
         self._rounding = rounding
+        _LOGGER.debug("Created sensor %s", self._sensor)
 
     @property
     def name(self):
@@ -166,15 +180,19 @@ class AuroraSensor(SensorEntity):
             attributes['Bill Overdue Amount'] = self._session.BillOverDueAmount
             return attributes
 
-    def update(self):
+    async def async_update(self):
         """Collect updated data from Aurora+ API."""
-        try:
-            _LOGGER.debug("Updating sensor: %s", self._sensor)
-            self._session.getcurrent()
-            self._session.getsummary()
-            self._data = self._session
-        except OSError as err:
-            _LOGGER.error("Updating Aurora+ failed: %s", err)
+        def _api_update():
+          try:
+              _LOGGER.debug("Updating sensor: %s", self._sensor)
+              self._session.getcurrent()
+              self._session.getsummary()
+              self._data = self._session
+          except OSError as err:
+              _LOGGER.error("Updating Aurora+ failed: %s", err)
+
+        await self._hass.async_add_executor_job(_api_update)
+
         self._old_state = self._state
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
             self._state = round(
