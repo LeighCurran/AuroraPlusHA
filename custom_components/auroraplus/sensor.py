@@ -148,7 +148,7 @@ class AuroraSensor(SensorEntity):
         self._state = None
         self._last_reset = None
         self._api = aurora_api
-        self._uniqueid = self._name
+        self._uniqueid = self._name.replace(' ', '_').lower()
         self._rounding = rounding
         _LOGGER.debug("Created sensor %s", self._sensor)
 
