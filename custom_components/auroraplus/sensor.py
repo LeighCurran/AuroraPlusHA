@@ -99,7 +99,7 @@ async def async_setup_platform(hass, config,
             aurora_init
         )
         if AuroraPlus.Error:
-            _LOGGER.debug("Error: %s", AuroraPlus.Error)
+            _LOGGER.debug("AuroraPlus Error: %s", AuroraPlus.Error)
     except OSError as err:
         _LOGGER.error("Connection to Aurora+ failed: %s", err)
 
@@ -166,7 +166,7 @@ class AuroraSensor(SensorEntity):
         self._api = aurora_api
         self._uniqueid = self._name.replace(' ', '_').lower()
         self._rounding = rounding
-        _LOGGER.debug("Created sensor %s", self._sensor)
+        _LOGGER.debug(f'{self._sensor} created')
 
     @property
     def name(self):
@@ -245,7 +245,7 @@ class AuroraSensor(SensorEntity):
             pass
 
         else:
-            _LOGGER.error("Unknown sensor type found")
+            _LOGGER.error(f'{self._sensor}: Unknown sensor type')
         if self._old_state and self._state != self._old_state:
             self._last_reset = datetime.datetime.now()
 
@@ -261,7 +261,7 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         self._api = aurora_api
         self._uniqueid = self._name.replace(' ', '_').lower()
         self._rounding = rounding
-        _LOGGER.debug("Created historical sensor %s", self._sensor)
+        _LOGGER.debug(f'{self._sensor} created (historical)')
 
     @property
     def name(self):
@@ -288,9 +288,7 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
 
     @property
     def statistic_id(self) -> str:
-        _LOGGER.debug("Statistic_id: %s",
-                      'sensor:' + self._uniqueid)
-        return 'sensor:' + self._uniqueid
+        return 'sensor.' + self._uniqueid
 
     @property
     def unit_of_measurement(self):
@@ -303,8 +301,6 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
     @property
     def historical_states(self):
         """Return the historical state of the sensor."""
-        _LOGGER.debug("Returning historical states for: %s %s",
-                      self._sensor, self._attr_historical_states)
         return self._attr_historical_states
 
     async def async_update_historical(self):
@@ -317,9 +313,8 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
             'MeteredUsageRecords'
         )
         if not metered_records:
-            _LOGGER.warning(f"Empty daily records for {self._sensor}")
+            _LOGGER.warning(f"{self._sensor}: no metered records")
             return
-        # _LOGGER.debug(f"MeteredUsageRecords: {metered_records}")
 
         self._attr_historical_states = [
             HistoricalState(
@@ -334,12 +329,14 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
             and r.get('KilowattHourUsage')
             and r.get('KilowattHourUsage').get(tariff)
         ]
-        _LOGGER.debug("Done with historical states for: %s",
-                      self._sensor)
+
+        if not self._attr_historical_states:
+            _LOGGER.warning(f"{self._sensor}: empty historical states")
+
+        _LOGGER.debug(f'{self._sensor}: historical states: %s',
+                      self._attr_historical_states)
 
     def get_statistic_metadata(self) -> StatisticMetaData:
-        _LOGGER.debug("Getting statistic meta for: %s",
-                      self._sensor)
         meta = super().get_statistic_metadata()
         meta["has_sum"] = True
 
@@ -365,6 +362,6 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
                 )
             )
 
-        _LOGGER.debug("Calculated statistics for: %s, %s",
-                      self._sensor, ret)
+        _LOGGER.debug(f'{self._sensor}: calculated statistics %s',
+                      ret)
         return ret
