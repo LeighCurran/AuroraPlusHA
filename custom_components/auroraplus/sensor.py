@@ -128,7 +128,7 @@ class AuroraApi():
         self._hass = hass
         self._session = auroraplus
 
-    # @Throttle(DEFAULT_SCAN_INTERVAL)  # XXX: should be configurable
+    @Throttle(min_time=DEFAULT_SCAN_INTERVAL)  # XXX: should be configurable
     async def async_update(self):
         await self._hass.async_add_executor_job(self._api_update)
 
@@ -143,6 +143,8 @@ class AuroraApi():
 
     def __getattr__(self, attr):
         """Forward any attribute access to the session, or handle error """
+        if attr == '_throttle':
+            raise AttributeError()
         try:
             return getattr(self._session, attr)
         except AttributeError:
