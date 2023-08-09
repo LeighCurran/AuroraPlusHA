@@ -237,10 +237,12 @@ class AuroraSensor(SensorEntity):
                 float(self._api.EstimatedBalance), self._rounding)
         elif self._sensor == SENSOR_DOLLARVALUEUSAGE:
             self._state = round(
-                self._api.DollarValueUsage['Total'], self._rounding)
+                self._api.DollarValueUsage.get('Total', float('nan')),
+                self._rounding)
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:
             self._state = round(
-                self._api.KilowattHourUsage['Total'], self._rounding)
+                self._api.KilowattHourUsage.get('Total', float('nan')),
+                self._rounding)
         elif self._sensor.startswith(SENSOR_KILOWATTHOURUSAGETARIFF):
             pass
 
