@@ -12,6 +12,10 @@ from homeassistant.components.sensor import (
     SensorEntity
 )
 
+from homeassistant.exceptions import (
+    PlatformNotReady,
+)
+
 from homeassistant.components.recorder.models import (StatisticData,
                                                       StatisticMetaData)
 from homeassistant.components.recorder.statistics import StatisticsRow
@@ -27,6 +31,7 @@ from homeassistant.const import (
     DEVICE_CLASS_MONETARY,
     DEVICE_CLASS_ENERGY,
 )
+
 
 from homeassistant.util import Throttle
 
@@ -94,14 +99,13 @@ async def async_setup_platform(hass, config,
 
     try:
         def aurora_init():
-            return auroraplus.api(username, password)
+            session = auroraplus.api(username, password)
+            return session
         AuroraPlus = await hass.async_add_executor_job(
             aurora_init
         )
-        if AuroraPlus.Error:
-            _LOGGER.debug("AuroraPlus Error: %s", AuroraPlus.Error)
     except OSError as err:
-        _LOGGER.error("Connection to Aurora+ failed: %s", err)
+        raise PlatformNotReady('Connection to Aurora+ failed') from err
 
     aurora_api = AuroraApi(hass, AuroraPlus)
 
@@ -117,6 +121,7 @@ async def async_setup_platform(hass, config,
         for sensor in SENSORS_ENERGY
     ],
         True)
+    _LOGGER.debug(f'Aurora+ platform ready with {aurora_api}')
 
 
 class AuroraApi():
@@ -124,9 +129,10 @@ class AuroraApi():
     _hass = None
     _session = None
 
-    def __init__(self, hass, auroraplus):
+    def __init__(self, hass, session):
         self._hass = hass
-        self._session = auroraplus
+        self._session = session
+        _LOGGER.debug(f'AuroraApi ready with {self._session}')
 
     @Throttle(min_time=DEFAULT_SCAN_INTERVAL)  # XXX: should be configurable
     async def async_update(self):
@@ -134,22 +140,29 @@ class AuroraApi():
 
     def _api_update(self):
         try:
+            self._session.gettoken()
             self._session.getcurrent()
             self._session.getsummary()
             self._session.getday()
         except Exception as e:
             _LOGGER.warn(f'Error updating data: {e}')
-        _LOGGER.debug('Updated data')
+            return
+        _LOGGER.debug('Updated data successfully')
 
     def __getattr__(self, attr):
         """Forward any attribute access to the session, or handle error """
         if attr == '_throttle':
             raise AttributeError()
+        _LOGGER.debug(f'Getting data for {attr}')
         try:
-            return getattr(self._session, attr)
-        except AttributeError:
-            _LOGGER.debug(f'Data for {attr} not yet available')
-            return {}  # an empty thing that has `get`
+            data = getattr(self._session, attr)
+        except AttributeError as err:
+            _LOGGER.debug(
+                f'Data for {attr} not yet available'
+            )
+            return {}  # empty with a get
+        _LOGGER.debug(f'... returning {data}')
+        return data
 
 
 class AuroraSensor(SensorEntity):
@@ -314,7 +327,7 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         metered_records = self._api.day.get(
             'MeteredUsageRecords'
         )
-        if not metered_records:
+        if metered_records is None:
             _LOGGER.warning(f"{self._sensor}: no metered records")
             return
 
