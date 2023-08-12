@@ -56,15 +56,6 @@ SENSORS_MONETARY = [
     SENSOR_DOLLARVALUEUSAGE,
 ]
 
-SENSORS_ENERGY = [
-    SENSOR_KILOWATTHOURUSAGETARIFF + 'T31',
-    SENSOR_KILOWATTHOURUSAGETARIFF + 'T41',
-    SENSOR_KILOWATTHOURUSAGETARIFF + 'T61',
-    SENSOR_KILOWATTHOURUSAGETARIFF + 'T62',
-    SENSOR_KILOWATTHOURUSAGETARIFF + 'T93PEAK',
-    SENSOR_KILOWATTHOURUSAGETARIFF + 'T93OFFPEAK',
-    SENSOR_KILOWATTHOURUSAGETARIFF + 'T140',
-]
 
 POSSIBLE_MONITORED = SENSORS_MONETARY + [SENSOR_KILOWATTHOURUSAGE]
 
@@ -108,6 +99,16 @@ async def async_setup_platform(hass, config,
         raise PlatformNotReady('Connection to Aurora+ failed') from err
 
     aurora_api = AuroraApi(hass, AuroraPlus)
+    await aurora_api.async_update()
+    try:
+        tariffs = aurora_api.day['TariffTypes']
+    except KeyError:
+        raise PlatformNotReady('Data not available yet')
+
+    sensors_energy = [
+        f'{SENSOR_KILOWATTHOURUSAGETARIFF} {t}'
+        for t in tariffs
+    ]
 
     async_add_entities([
         AuroraSensor(hass,
@@ -118,10 +119,10 @@ async def async_setup_platform(hass, config,
         AuroraHistoricalSensor(hass,
                                sensor, name,
                                aurora_api, rounding)
-        for sensor in SENSORS_ENERGY
+        for sensor in sensors_energy
     ],
         True)
-    _LOGGER.debug(f'Aurora+ platform ready with {aurora_api}')
+    _LOGGER.info(f'Aurora+ platform ready with tariffs {tariffs}')
 
 
 class AuroraApi():
@@ -144,10 +145,9 @@ class AuroraApi():
             self._session.getcurrent()
             self._session.getsummary()
             self._session.getday()
+            _LOGGER.debug('Updated data successfully')
         except Exception as e:
             _LOGGER.warn(f'Error updating data: {e}')
-            return
-        _LOGGER.debug('Updated data successfully')
 
     def __getattr__(self, attr):
         """Forward any attribute access to the session, or handle error """
