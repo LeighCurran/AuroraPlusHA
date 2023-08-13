@@ -102,8 +102,10 @@ async def async_setup_platform(hass, config,
     await aurora_api.async_update()
     try:
         tariffs = aurora_api.day['TariffTypes']
-    except KeyError:
-        raise PlatformNotReady('Data not available yet')
+        if not tariffs:
+            raise KeyError('Empty tariffs in returned data')
+    except KeyError as err:
+        raise PlatformNotReady('Data not available yet') from err
 
     sensors_energy = [
         f'{SENSOR_KILOWATTHOURUSAGETARIFF} {t}'
@@ -143,9 +145,15 @@ class AuroraApi():
         try:
             self._session.gettoken()
             self._session.getcurrent()
-            self._session.getsummary()
-            self._session.getday()
-            _LOGGER.debug('Updated data successfully')
+            for i in range(-1, - 10, - 1):
+                self._session.getday(i)
+                if not self._session.day['NoDataFlag']:
+                    self._session.getsummary(i)
+                    break
+                _LOGGER.debug(f'No data at index {i}')
+            _LOGGER.info('Successfully obtained data from '
+                         + self._session.day['StartDate'])
+            _LOGGER.debug(f'Data: {self._session.day}')
         except Exception as e:
             _LOGGER.warn(f'Error updating data: {e}')
 
@@ -153,7 +161,7 @@ class AuroraApi():
         """Forward any attribute access to the session, or handle error """
         if attr == '_throttle':
             raise AttributeError()
-        _LOGGER.debug(f'Getting data for {attr}')
+        _LOGGER.debug(f'Accessing data for {attr}')
         try:
             data = getattr(self._session, attr)
         except AttributeError as err:
