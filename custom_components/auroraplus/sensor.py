@@ -101,7 +101,7 @@ async def async_setup_platform(hass, config,
     aurora_api = AuroraApi(hass, AuroraPlus)
     await aurora_api.async_update()
     try:
-        tariffs = aurora_api.day['TariffTypes']
+        tariffs = aurora_api.month['TariffTypes']
         if not tariffs:
             raise KeyError('Empty tariffs in returned data')
     except KeyError as err:
@@ -148,6 +148,7 @@ class AuroraApi():
             for i in range(-1, - 10, - 1):
                 self._session.getday(i)
                 if not self._session.day['NoDataFlag']:
+                    self._session.getmonth()
                     self._session.getsummary(i)
                     break
                 _LOGGER.debug(f'No data at index {i}')
