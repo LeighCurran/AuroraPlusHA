@@ -363,10 +363,7 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
 
         self._attr_historical_states = [
             HistoricalState(
-                state=round(
-                    float(r[field][tariff]),
-                    self._rounding
-                ),
+                state=float(r[field][tariff]),
                 dt=datetime.datetime.fromisoformat(r['StartTime'])
             )
             for r in metered_records
