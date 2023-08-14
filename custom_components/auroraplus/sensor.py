@@ -161,7 +161,6 @@ class AuroraApi():
                 _LOGGER.debug(f'No data at index {i}')
             _LOGGER.info('Successfully obtained data from '
                          + self._session.day['StartDate'])
-            _LOGGER.debug(f'Data: {self._session.day}')
         except Exception as e:
             _LOGGER.warn(f'Error updating data: {e}')
 
@@ -274,7 +273,7 @@ class AuroraSensor(SensorEntity):
                 self._rounding)
 
         else:
-            _LOGGER.error(f'{self._sensor}: Unknown sensor type')
+            _LOGGER.warn(f'{self._sensor}: Unknown sensor type')
         if self._old_state and self._state != self._old_state:
             self._last_reset = datetime.datetime.now()
 
@@ -357,7 +356,9 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
             'MeteredUsageRecords'
         )
         if metered_records is None:
-            _LOGGER.warning(f"{self._sensor}: no metered records")
+            _LOGGER.warning(
+                f"{self._sensor}: no metered records, can't obtain hourly data"
+            )
             return
 
         self._attr_historical_states = [
@@ -375,7 +376,7 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         ]
 
         if not self._attr_historical_states:
-            _LOGGER.warning(
+            _LOGGER.debug(
                 f"{self._sensor}: empty historical states for tariff {tariff}"
             )
 
