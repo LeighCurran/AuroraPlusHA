@@ -93,6 +93,7 @@ async def async_setup_platform(hass, config,
     try:
         def aurora_init():
             session = auroraplus.api(username, password)
+            session.getmonth()
             return session
         AuroraPlus = await hass.async_add_executor_job(
             aurora_init
@@ -100,10 +101,8 @@ async def async_setup_platform(hass, config,
     except OSError as err:
         raise PlatformNotReady('Connection to Aurora+ failed') from err
 
-    aurora_api = AuroraApi(hass, AuroraPlus)
-    await aurora_api.async_update()
     try:
-        tariffs = aurora_api.month['TariffTypes']
+        tariffs = AuroraPlus.month['TariffTypes']
         if not tariffs:
             raise KeyError('Empty tariffs in returned data')
     except KeyError as err:
@@ -117,6 +116,9 @@ async def async_setup_platform(hass, config,
         f'{SENSOR_DOLLARVALUEUSAGETARIFF} {t}'
         for t in tariffs
     ]
+
+    aurora_api = AuroraApi(hass, AuroraPlus)
+    await aurora_api.async_update()
 
     async_add_entities([
         AuroraSensor(hass,
@@ -154,7 +156,6 @@ class AuroraApi():
             for i in range(-1, - 10, - 1):
                 self._session.getday(i)
                 if not self._session.day['NoDataFlag']:
-                    self._session.getmonth()
                     self._session.getsummary(i)
                     break
                 _LOGGER.debug(f'No data at index {i}')
