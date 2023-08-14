@@ -13,6 +13,7 @@ from homeassistant.components.sensor import (
 )
 
 from homeassistant.exceptions import (
+    IntegrationError,
     PlatformNotReady,
 )
 
@@ -49,7 +50,8 @@ _LOGGER = logging.getLogger(__name__)
 SENSOR_ESTIMATEDBALANCE = 'Estimated Balance'
 SENSOR_DOLLARVALUEUSAGE = 'Dollar Value Usage'
 SENSOR_KILOWATTHOURUSAGE = 'Kilowatt Hour Usage'
-SENSOR_KILOWATTHOURUSAGETARIFF = 'Kilowatt Hour Usage Tariff '
+SENSOR_KILOWATTHOURUSAGETARIFF = 'Kilowatt Hour Usage Tariff'
+SENSOR_DOLLARVALUEUSAGETARIFF = 'Dollar Value Usage Tariff'
 
 SENSORS_MONETARY = [
     SENSOR_ESTIMATEDBALANCE,
@@ -111,6 +113,10 @@ async def async_setup_platform(hass, config,
         f'{SENSOR_KILOWATTHOURUSAGETARIFF} {t}'
         for t in tariffs
     ]
+    sensors_cost = [
+        f'{SENSOR_DOLLARVALUEUSAGETARIFF} {t}'
+        for t in tariffs
+    ]
 
     async_add_entities([
         AuroraSensor(hass,
@@ -121,7 +127,7 @@ async def async_setup_platform(hass, config,
         AuroraHistoricalSensor(hass,
                                sensor, name,
                                aurora_api, rounding)
-        for sensor in sensors_energy
+        for sensor in sensors_energy + sensors_cost
     ],
         True)
     _LOGGER.info(f'Aurora+ platform ready with tariffs {tariffs}')
@@ -265,8 +271,6 @@ class AuroraSensor(SensorEntity):
             self._state = round(
                 self._api.KilowattHourUsage.get('Total', float('nan')),
                 self._rounding)
-        elif self._sensor.startswith(SENSOR_KILOWATTHOURUSAGETARIFF):
-            pass
 
         else:
             _LOGGER.error(f'{self._sensor}: Unknown sensor type')
@@ -299,11 +303,18 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
 
     @property
     def device_class(self):
-        """Return device class fo the sensor."""
-        if self._sensor in SENSORS_MONETARY:
+        """Return device class fo the sensor.
+        This method does some string-parsing and error handling magic,
+        so others don't have to, to determine the type of sensor.
+        """
+        if self._sensor.startswith(SENSOR_DOLLARVALUEUSAGETARIFF):
             return DEVICE_CLASS_MONETARY
-        else:
+        elif self._sensor.startswith(SENSOR_KILOWATTHOURUSAGETARIFF):
             return DEVICE_CLASS_ENERGY
+        else:
+            raise IntegrationError(
+                f'{self._sensor} is not handled by {self.__class__}'
+            )
 
     @property
     def unique_id(self):
@@ -317,9 +328,9 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement."""
-        if self._sensor in SENSORS_MONETARY:
+        if self.device_class == DEVICE_CLASS_MONETARY:
             return CURRENCY_DOLLAR
-        else:
+        elif self.device_class == DEVICE_CLASS_ENERGY:
             return ENERGY_KILO_WATT_HOUR
 
     @property
@@ -328,8 +339,16 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         return self._attr_historical_states
 
     async def async_update_historical(self):
-        if self._sensor.startswith(SENSOR_KILOWATTHOURUSAGETARIFF):
-            tariff = self._sensor.removeprefix(SENSOR_KILOWATTHOURUSAGETARIFF)
+        if self.device_class == DEVICE_CLASS_MONETARY:
+            tariff = self._sensor.removeprefix(
+                SENSOR_DOLLARVALUEUSAGETARIFF
+            ).strip()
+            field = 'DollarValueUsage'
+        elif self._sensor.startswith(SENSOR_KILOWATTHOURUSAGETARIFF):
+            tariff = self._sensor.removeprefix(
+                SENSOR_KILOWATTHOURUSAGETARIFF
+            ).strip()
+            field = 'KilowattHourUsage'
 
         await self._api.async_update()
 
@@ -343,19 +362,21 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         self._attr_historical_states = [
             HistoricalState(
                 state=round(
-                    float(r['KilowattHourUsage'][tariff]),
+                    float(r[field][tariff]),
                     self._rounding
                 ),
                 dt=datetime.datetime.fromisoformat(r['StartTime'])
             )
             for r in metered_records
             if r
-            and r.get('KilowattHourUsage')
-            and r.get('KilowattHourUsage').get(tariff)
+            and r.get(field)
+            and r.get(field).get(tariff)
         ]
 
         if not self._attr_historical_states:
-            _LOGGER.warning(f"{self._sensor}: empty historical states")
+            _LOGGER.warning(
+                f"{self._sensor}: empty historical states for tariff {tariff}"
+            )
 
         _LOGGER.debug(f'{self._sensor}: historical states: %s',
                       self._attr_historical_states)
@@ -372,7 +393,14 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         *,
         latest: StatisticsRow | None = None,
     ) -> list[StatisticData]:
-        accumulated = latest["sum"] if latest else 0
+        """Calculate statistics over multiple sampling periods.
+
+        This code works for both energy and monetary sensors by fluke: The
+        Aurora+ API returns hourly energy consumption only, and daily monetary
+        cost only, both as part of the same data array. The format allows us to
+        calculate correct statistics by simply ignoring the empty records.
+        """
+        accumulated = latest.get('sum', 0) if latest else 0
 
         ret = []
 
