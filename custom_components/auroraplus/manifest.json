@@ -6,7 +6,7 @@
   "dependencies": [],
   "codeowners": ["@LeighCurran"],
   "requirements": [
-      "auroraplus@git+https://github.com/shtrom/AuroraPlus@more-than-1-day",
+      "auroraplus@git+https://github.com/shtrom/AuroraPlus@oauth-mfa-token",
       "homeassistant-historical-sensor==2.0.0rc2"
   ],
   "iot_class": "cloud_polling",
