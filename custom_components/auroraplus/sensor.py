@@ -1,112 +1,78 @@
 """Support for Aurora+"""
-import homeassistant.helpers.config_validation as cv
 import datetime
 import logging
 
-import auroraplus
 import voluptuous as vol
 
-from homeassistant.components.sensor import (
-    PLATFORM_SCHEMA,
-    STATE_CLASS_TOTAL,
-    SensorEntity
-)
-
 from homeassistant.exceptions import (
+    ConfigEntryNotReady,
     IntegrationError,
     PlatformNotReady,
 )
 
-from homeassistant.components.recorder.models import (StatisticData,
-                                                      StatisticMetaData)
-from homeassistant.components.recorder.statistics import StatisticsRow
-
-from homeassistant.const import (
-    CONF_USERNAME,
-    CONF_PASSWORD,
-    CONF_NAME,
-    CONF_MONITORED_CONDITIONS,
-    CURRENCY_DOLLAR,
-    ENERGY_KILO_WATT_HOUR,
-    CONF_SCAN_INTERVAL,
-    DEVICE_CLASS_MONETARY,
-    DEVICE_CLASS_ENERGY,
+import homeassistant.helpers.config_validation as cv
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorStateClass,
 )
 
-
-from homeassistant.util import Throttle
-
+from homeassistant.components.recorder.models import (
+    StatisticData,
+    StatisticMetaData,
+)
+from homeassistant.components.recorder.statistics import StatisticsRow
+from homeassistant.components.sensor.const import (
+    SensorDeviceClass,
+)
+from homeassistant.const import (
+    CONF_ACCESS_TOKEN,
+    CONF_MONITORED_CONDITIONS,
+    CONF_NAME,
+    CONF_SCAN_INTERVAL,
+    CURRENCY_DOLLAR,
+    UnitOfEnergy,
+)
 from homeassistant_historical_sensor import (
     HistoricalSensor,
     HistoricalState,
     PollUpdateMixin,
 )
 
-CONF_ROUNDING = "rounding"
-
+from .api import AuroraApi, aurora_init
 
 _LOGGER = logging.getLogger(__name__)
 
-SENSOR_ESTIMATEDBALANCE = 'Estimated Balance'
-SENSOR_DOLLARVALUEUSAGE = 'Dollar Value Usage'
-SENSOR_KILOWATTHOURUSAGE = 'Kilowatt Hour Usage'
-SENSOR_KILOWATTHOURUSAGETARIFF = 'Kilowatt Hour Usage Tariff'
-SENSOR_DOLLARVALUEUSAGETARIFF = 'Dollar Value Usage Tariff'
-
-SENSORS_MONETARY = [
-    SENSOR_ESTIMATEDBALANCE,
+from .config_flow import (
+    DEFAULT_ROUNDING,
+)
+from .const import (
+    CONF_ROUNDING,
+    DEFAULT_MONITORED,
+    DOMAIN,
+    POSSIBLE_MONITORED,
+    SENSORS_MONETARY,
     SENSOR_DOLLARVALUEUSAGE,
-]
-
-
-POSSIBLE_MONITORED = SENSORS_MONETARY + [SENSOR_KILOWATTHOURUSAGE]
-
-DEFAULT_MONITORED = POSSIBLE_MONITORED
-
-DEFAULT_NAME = 'Aurora+'
-DEFAULT_ROUNDING = 2
-
-DEFAULT_SCAN_INTERVAL = datetime.timedelta(hours=1)
-
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
-    {
-        vol.Required(CONF_USERNAME): cv.string,
-        vol.Required(CONF_PASSWORD): cv.string,
-        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Optional(CONF_ROUNDING, default=DEFAULT_ROUNDING): vol.Coerce(int),
-        vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
-        vol.Optional(CONF_MONITORED_CONDITIONS, default=DEFAULT_MONITORED):
-            vol.All(cv.ensure_list, [vol.In(POSSIBLE_MONITORED)])
-    }
+    SENSOR_DOLLARVALUEUSAGETARIFF,
+    SENSOR_ESTIMATEDBALANCE,
+    SENSOR_KILOWATTHOURUSAGE,
+    SENSOR_KILOWATTHOURUSAGETARIFF,
 )
 
 
-async def async_setup_platform(hass, config,
+async def async_setup_entry(hass, config_entry,
                                async_add_entities,
                                discovery_info=None):
     """Set up the Aurora+ platform for sensors."""
-    username = config.get(CONF_USERNAME)
-    password = config.get(CONF_PASSWORD)
-    name = config.get(CONF_NAME)
-    rounding = config.get(CONF_ROUNDING)
+    config = hass.data[DOMAIN][config_entry.entry_id]
+    name = 'AuroraPlus'
+    rounding = config.get(CONF_ROUNDING, DEFAULT_ROUNDING)
 
-    try:
-        def aurora_init():
-            session = auroraplus.api(username, password)
-            session.getmonth()
-            return session
-        AuroraPlus = await hass.async_add_executor_job(
-            aurora_init
-        )
-    except OSError as err:
-        raise PlatformNotReady('Connection to Aurora+ failed') from err
+    aurora_api = config_entry.runtime_data
+    await aurora_api.async_update()
 
-    try:
-        tariffs = AuroraPlus.month['TariffTypes']
-        if not tariffs:
-            raise KeyError('Empty tariffs in returned data')
-    except KeyError as err:
-        raise PlatformNotReady('Data not available yet') from err
+    tariffs = aurora_api.month['TariffTypes']
+    if not tariffs:
+        raise ConfigEntryNotReady('Empty tariffs in returned data')
 
     sensors_energy = [
         f'{SENSOR_KILOWATTHOURUSAGETARIFF} {t}'
@@ -117,14 +83,12 @@ async def async_setup_platform(hass, config,
         for t in tariffs
     ]
 
-    aurora_api = AuroraApi(hass, AuroraPlus)
-    await aurora_api.async_update()
 
     async_add_entities([
         AuroraSensor(hass,
                      sensor, name,
                      aurora_api, rounding)
-        for sensor in config.get(CONF_MONITORED_CONDITIONS)
+        for sensor in config.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED)
     ] + [
         AuroraHistoricalSensor(hass,
                                sensor, name,
@@ -135,58 +99,15 @@ async def async_setup_platform(hass, config,
     _LOGGER.info(f'Aurora+ platform ready with tariffs {tariffs}')
 
 
-class AuroraApi():
-    """Asynchronously-updating wrapper for the Aurora API. """
-    _hass = None
-    _session = None
-
-    def __init__(self, hass, session):
-        self._hass = hass
-        self._session = session
-        _LOGGER.debug(f'AuroraApi ready with {self._session}')
-
-    @Throttle(min_time=DEFAULT_SCAN_INTERVAL)  # XXX: should be configurable
-    async def async_update(self):
-        await self._hass.async_add_executor_job(self._api_update)
-
-    def _api_update(self):
-        try:
-            self._session.gettoken()
-            self._session.getcurrent()
-            for i in range(-1, - 10, - 1):
-                self._session.getday(i)
-                if not self._session.day['NoDataFlag']:
-                    self._session.getsummary(i)
-                    break
-                _LOGGER.debug(f'No data at index {i}')
-            _LOGGER.info('Successfully obtained data from '
-                         + self._session.day['StartDate'])
-        except Exception as e:
-            _LOGGER.warn(f'Error updating data: {e}')
-
-    def __getattr__(self, attr):
-        """Forward any attribute access to the session, or handle error """
-        if attr == '_throttle':
-            raise AttributeError()
-        _LOGGER.debug(f'Accessing data for {attr}')
-        try:
-            data = getattr(self._session, attr)
-        except AttributeError as err:
-            _LOGGER.debug(
-                f'Data for {attr} not yet available'
-            )
-            return {}  # empty with a get
-        _LOGGER.debug(f'... returning {data}')
-        return data
-
-
 class AuroraSensor(SensorEntity):
     """Representation of a Aurora+ sensor."""
 
     def __init__(self, hass, sensor, name, aurora_api, rounding):
         """Initialize the Aurora+ sensor."""
         self._hass = hass
-        self._name = name + ' ' + sensor
+        self._name = (name + ' '
+                      + aurora_api.service_agreement_id + ' '
+                      + sensor)
         self._sensor = sensor
         self._unit_of_measurement = None
         self._state = None
@@ -213,15 +134,15 @@ class AuroraSensor(SensorEntity):
     @property
     def state_class(self):
         """Return the state class of the sensor."""
-        return STATE_CLASS_TOTAL
+        return SensorStateClass.TOTAL
 
     @property
     def device_class(self):
         """Return device class fo the sensor."""
         if self._sensor in SENSORS_MONETARY:
-            return DEVICE_CLASS_MONETARY
+            return SensorDeviceClass.MONETARY
         else:
-            return DEVICE_CLASS_ENERGY
+            return SensorDeviceClass.ENERGY
 
     @property
     def unique_id(self):
@@ -234,7 +155,7 @@ class AuroraSensor(SensorEntity):
         if self._sensor in SENSORS_MONETARY:
             return CURRENCY_DOLLAR
         else:
-            return ENERGY_KILO_WATT_HOUR
+            return UnitOfEnergy.KILO_WATT_HOUR
 
     @property
     def extra_state_attributes(self):
@@ -282,7 +203,9 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
     def __init__(self, hass, sensor, name, aurora_api, rounding):
         """Initialize the Aurora+ sensor."""
         self._hass = hass
-        self._name = name + ' ' + sensor
+        self._name = (name + ' '
+                      + aurora_api.service_agreement_id + ' '
+                      + sensor)
         self._sensor = sensor
         self._unit_of_measurement = None
         self._attr_historical_states = []
@@ -299,7 +222,7 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
     # @property
     # def state_class(self):
     #     """Return the state class of the sensor."""
-    #     return STATE_CLASS_TOTAL
+    #     return SensorStateClass.TOTAL
 
     @property
     def device_class(self):
@@ -308,9 +231,9 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         so others don't have to, to determine the type of sensor.
         """
         if self._sensor.startswith(SENSOR_DOLLARVALUEUSAGETARIFF):
-            return DEVICE_CLASS_MONETARY
+            return SensorDeviceClass.MONETARY
         elif self._sensor.startswith(SENSOR_KILOWATTHOURUSAGETARIFF):
-            return DEVICE_CLASS_ENERGY
+            return SensorDeviceClass.ENERGY
         else:
             raise IntegrationError(
                 f'{self._sensor} is not handled by {self.__class__}'
@@ -328,10 +251,10 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement."""
-        if self.device_class == DEVICE_CLASS_MONETARY:
+        if self.device_class == SensorDeviceClass.MONETARY:
             return CURRENCY_DOLLAR
-        elif self.device_class == DEVICE_CLASS_ENERGY:
-            return ENERGY_KILO_WATT_HOUR
+        elif self.device_class == SensorDeviceClass.ENERGY:
+            return UnitOfEnergy.KILO_WATT_HOUR
 
     @property
     def historical_states(self):
@@ -339,7 +262,7 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         return self._attr_historical_states
 
     async def async_update_historical(self):
-        if self.device_class == DEVICE_CLASS_MONETARY:
+        if self.device_class == SensorDeviceClass.MONETARY:
             tariff = self._sensor.removeprefix(
                 SENSOR_DOLLARVALUEUSAGETARIFF
             ).strip()

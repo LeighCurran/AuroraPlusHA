@@ -1,0 +1,19 @@
+{
+    "config": {
+        "abort": {
+            "reauth_successful": "Successfully reauthenticated to Aurora+!"
+        },
+        "error": {"auth": "An error occured while authenticating"},
+        "step": {
+            "reauth_confirm": {
+                "description": "The Aurora+ integration needs to re-authenticate your account",
+                "title": "Re-authentication needed"
+            },
+            "user": {
+                "data": {"access_token": "Access Token"},
+                "description": "Follow https://github.com/shtrom/AuroraPlus/tree/oauth-mfa-token?tab=readme-ov-file#obtain-a-token to obtain an access token.",
+                "title": "Authentication to Aurora+"
+            }
+        }
+    }
+}
