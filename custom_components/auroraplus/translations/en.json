@@ -11,7 +11,7 @@
             },
             "user": {
                 "data": {"access_token": "Access Token"},
-                "description": "Follow https://github.com/shtrom/AuroraPlus/tree/oauth-mfa-token?tab=readme-ov-file#obtain-a-token to obtain an access token.",
+                "description": "Go to [this page](https://shtrom.github.io/AuroraPlus/), or follow [these instructions](https://github.com/shtrom/AuroraPlus/tree/oauth-mfa-token?tab=readme-ov-file#obtain-a-token) to obtain an access token.",
                 "title": "Authentication to Aurora+"
             }
         }
