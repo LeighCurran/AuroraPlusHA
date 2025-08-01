@@ -59,6 +59,11 @@ class AuroraApi():
                 _LOGGER.debug(f'No data at index {i}')
             _LOGGER.info('Successfully obtained data from '
                          + self._session.day['StartDate'])
+        except HTTPError as e:
+            status_code = e.response.status_code
+            if status_code in [401, 403]:
+                raise ConfigEntryAuthFailed(e) from e
+            raise e
         except Exception as e:
             _LOGGER.warn(f'Error updating data: {e}')
 
