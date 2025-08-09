@@ -16,7 +16,7 @@ from homeassistant.const import (
 )
 
 from .api import AuroraApi, aurora_init
-from .const import DOMAIN
+from .const import CONF_ID_TOKEN, DOMAIN
 # from .sensor import async_setup_platform
 from .sensor import async_setup_entry
 
@@ -27,12 +27,12 @@ async def async_setup_entry(hass, entry):
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = dict(entry.data)
 
-    access_token = entry.data.get(CONF_ACCESS_TOKEN)
+    id_token = entry.data.get(CONF_ID_TOKEN)
 
     try:
         api_session = await hass.async_add_executor_job(
             aurora_init,
-            access_token
+            id_token
         )
     except OSError as err:
         raise PlatformNotReady('Connection to Aurora+ failed') from err

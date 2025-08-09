@@ -2,6 +2,7 @@ import datetime
 
 DOMAIN = "auroraplus"
 
+CONF_ID_TOKEN = "id_token"
 CONF_SERVICE_AGREEMENT_ID = "service_agreement_id"
 CONF_ROUNDING = "rounding"
 

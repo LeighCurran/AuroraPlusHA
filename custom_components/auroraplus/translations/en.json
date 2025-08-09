@@ -10,8 +10,8 @@
                 "title": "Re-authentication needed"
             },
             "user": {
-                "data": {"access_token": "Access Token"},
-                "description": "Go to [this page](https://shtrom.github.io/AuroraPlus/), or follow [these instructions](https://github.com/shtrom/AuroraPlus/tree/oauth-mfa-token?tab=readme-ov-file#obtain-a-token) to obtain an access token.",
+                "data": {"id_token": "ID Token"},
+                "description": "Go to [this page](https://shtrom.github.io/AuroraPlus/), or follow [these instructions](https://github.com/shtrom/AuroraPlus/tree/oauth-mfa-token?tab=readme-ov-file#obtain-a-token) to obtain an ID token.",
                 "title": "Authentication to Aurora+"
             }
         }
