@@ -3,20 +3,11 @@ from typing import Any
 
 import homeassistant.helpers.config_validation as cv
 from homeassistant import config_entries
-from homeassistant.components.sensor import (
-    PLATFORM_SCHEMA,
-)
 from homeassistant.const import (
     CONF_ACCESS_TOKEN,
-    CONF_MONITORED_CONDITIONS,
-    CONF_NAME,
-    CONF_SCAN_INTERVAL,
 )
-from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import ConfigEntryAuthFailed
 
-from sqlalchemy.exc import SQLAlchemyError
 
 import voluptuous as vol
 
@@ -24,11 +15,8 @@ from .api import aurora_init
 from .const import (
     CONF_ID_TOKEN,
     CONF_SERVICE_AGREEMENT_ID,
-    DEFAULT_MONITORED,
-    DEFAULT_ROUNDING,
-    DEFAULT_SCAN_INTERVAL,
+    CONF_TOKEN,
     DOMAIN,
-    POSSIBLE_MONITORED,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -62,7 +50,7 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             id_token = user_input.get(CONF_ID_TOKEN)
             try:
-                session = await self.hass.async_add_executor_job(aurora_init, id_token)
+                session = await self.hass.async_add_executor_job(aurora_init, {}, id_token)
                 address = session.month["ServiceAgreements"][
                     session.serviceAgreementID
                 ]["PremiseName"]
@@ -75,6 +63,7 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             CONF_ACCESS_TOKEN: None,
                             CONF_ID_TOKEN: id_token,
                             CONF_SERVICE_AGREEMENT_ID: session.serviceAgreementID,
+                            CONF_TOKEN: None,
                         },
                     )
                     await self.hass.config_entries.async_reload(
@@ -89,10 +78,11 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             CONF_ACCESS_TOKEN: None,
                             CONF_ID_TOKEN: id_token,
                             CONF_SERVICE_AGREEMENT_ID: session.serviceAgreementID,
+                            CONF_TOKEN: None,
                         },
                     )
 
-            except ConfigEntryAuthFailed as e:
+            except ConfigEntryAuthFailed:
                 errors = {
                     "base": "auth",
                 }

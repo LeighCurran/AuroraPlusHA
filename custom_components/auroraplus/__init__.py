@@ -16,9 +16,8 @@ from homeassistant.const import (
 )
 
 from .api import AuroraApi, aurora_init
-from .const import CONF_ID_TOKEN, DOMAIN
+from .const import CONF_TOKEN, CONF_ID_TOKEN, DOMAIN
 # from .sensor import async_setup_platform
-from .sensor import async_setup_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -28,10 +27,12 @@ async def async_setup_entry(hass, entry):
     hass.data[DOMAIN][entry.entry_id] = dict(entry.data)
 
     id_token = entry.data.get(CONF_ID_TOKEN)
+    token = entry.data.get(CONF_TOKEN)
 
     try:
         api_session = await hass.async_add_executor_job(
             aurora_init,
+            token,
             id_token
         )
     except OSError as err:
@@ -41,7 +42,7 @@ async def async_setup_entry(hass, entry):
         entry.add_update_listener(AuroraApi.update_listener)
     )
 
-    entry.runtime_data = AuroraApi(hass, api_session)
+    entry.runtime_data = AuroraApi(hass, entry, api_session)
 
     await hass.config_entries.async_forward_entry_setups(
         entry, ["sensor"]

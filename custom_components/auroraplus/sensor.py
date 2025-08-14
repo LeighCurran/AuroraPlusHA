@@ -42,12 +42,10 @@ from .api import AuroraApi, aurora_init
 
 _LOGGER = logging.getLogger(__name__)
 
-from .config_flow import (
-    DEFAULT_ROUNDING,
-)
 from .const import (
     CONF_ROUNDING,
     DEFAULT_MONITORED,
+    DEFAULT_ROUNDING,
     DOMAIN,
     POSSIBLE_MONITORED,
     SENSORS_MONETARY,
