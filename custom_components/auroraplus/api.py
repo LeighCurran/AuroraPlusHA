@@ -66,7 +66,11 @@ class AuroraApi:
 
     @Throttle(min_time=DEFAULT_SCAN_INTERVAL)  # XXX: should be configurable
     async def async_update(self):
-        await self._hass.async_add_executor_job(self._api_update)
+        try:
+            await self._hass.async_add_executor_job(self._api_update)
+        except PlatformNotReady as exc:
+            _LOGGER.warning("AuroraPlusCoordinator not ready for data update yet")
+            _LOGGER.exception(exc)
 
     def _api_update(self):
         try:
@@ -101,7 +105,8 @@ class AuroraApi:
                 raise ConfigEntryAuthFailed(e) from e
             raise e
         except Exception as e:
-            _LOGGER.warn(f"Error updating data: {e}")
+            _LOGGER.warning(f"Error updating data: {e}")
+            _LOGGER.exception(e)
 
     @classmethod
     async def update_listener(cls, hass, config_entry):

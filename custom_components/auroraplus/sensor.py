@@ -180,8 +180,12 @@ class AuroraSensor(SensorEntity):
 
         self._old_state = self._state
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
-            self._state = round(
-                float(self._api.EstimatedBalance), self._rounding)
+            estimated_balance = self._api.EstimatedBalance
+            try:
+                self._state = round(
+                    float(estimated_balance), self._rounding)
+            except TypeError:
+                self._state = None
         elif self._sensor == SENSOR_DOLLARVALUEUSAGE:
             self._state = round(
                 self._api.DollarValueUsage.get('Total', float('nan')),
@@ -192,7 +196,7 @@ class AuroraSensor(SensorEntity):
                 self._rounding)
 
         else:
-            _LOGGER.warn(f'{self._sensor}: Unknown sensor type')
+            _LOGGER.warning(f'{self._sensor}: Unknown sensor type')
         if self._old_state and self._state != self._old_state:
             self._last_reset = datetime.datetime.now()
 
