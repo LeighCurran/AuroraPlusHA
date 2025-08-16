@@ -48,18 +48,20 @@ class AuroraPlusCoordinator:
             _LOGGER.warning("AuroraPlusCoordinator not ready for data update yet")
             _LOGGER.exception(exc)
 
+        self._hass.config_entries.async_update_entry(
+            self._config_entry,
+            data={
+                CONF_ACCESS_TOKEN: self._api.token.get("access_token"),
+                CONF_ID_TOKEN: self._api.token.get("id_token"),
+                CONF_SERVICE_AGREEMENT_ID: self._api.serviceAgreementID,
+                CONF_TOKEN: self._api.token,
+            },
+        )
+
     def _api_update(self):
         try:
             self._api.get_info()
-            self._hass.config_entries.async_update_entry(
-                self._config_entry,
-                data={
-                    CONF_ACCESS_TOKEN: self._api.token.get("access_token"),
-                    CONF_ID_TOKEN: self._api.token.get("id_token"),
-                    CONF_SERVICE_AGREEMENT_ID: self._api.serviceAgreementID,
-                    CONF_TOKEN: self._api.token,
-                },
-            )
+
             self._api.getcurrent()
             for i in range(-1, -10, -1):
                 self._api.getday(i)
