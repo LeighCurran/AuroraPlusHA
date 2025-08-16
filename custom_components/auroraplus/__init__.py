@@ -14,10 +14,14 @@ from homeassistant.const import (
     CONF_SCAN_INTERVAL,
     UnitOfEnergy,
 )
+from homeassistant.exceptions import (
+        PlatformNotReady
+)
 
-from .api import AuroraApi, aurora_init
+
+from .api import aurora_init
 from .const import CONF_TOKEN, CONF_ID_TOKEN, DOMAIN
-# from .sensor import async_setup_platform
+from .coordinator import AuroraPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +34,7 @@ async def async_setup_entry(hass, entry):
     token = entry.data.get(CONF_TOKEN)
 
     try:
-        api_session = await hass.async_add_executor_job(
+        api = await hass.async_add_executor_job(
             aurora_init,
             token,
             id_token
@@ -39,10 +43,10 @@ async def async_setup_entry(hass, entry):
         raise PlatformNotReady('Connection to Aurora+ failed') from err
 
     entry.async_on_unload(
-        entry.add_update_listener(AuroraApi.update_listener)
+        entry.add_update_listener(AuroraPlusCoordinator.update_listener)
     )
 
-    entry.runtime_data = AuroraApi(hass, entry, api_session)
+    entry.runtime_data = AuroraPlusCoordinator(hass, entry, api)
 
     await hass.config_entries.async_forward_entry_setups(
         entry, ["sensor"]

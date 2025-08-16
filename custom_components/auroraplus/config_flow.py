@@ -50,11 +50,11 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             id_token = user_input.get(CONF_ID_TOKEN)
             try:
-                session = await self.hass.async_add_executor_job(aurora_init, {}, id_token)
-                address = session.month["ServiceAgreements"][
-                    session.serviceAgreementID
+                api = await self.hass.async_add_executor_job(aurora_init, {}, id_token)
+                address = api.month["ServiceAgreements"][
+                    api.serviceAgreementID
                 ]["PremiseName"]
-                await self.async_set_unique_id(session.serviceAgreementID)
+                await self.async_set_unique_id(api.serviceAgreementID)
 
                 if self.reauth_entry:
                     self.hass.config_entries.async_update_entry(
@@ -62,7 +62,7 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         data={
                             CONF_ACCESS_TOKEN: None,
                             CONF_ID_TOKEN: id_token,
-                            CONF_SERVICE_AGREEMENT_ID: session.serviceAgreementID,
+                            CONF_SERVICE_AGREEMENT_ID: api.serviceAgreementID,
                             CONF_TOKEN: None,
                         },
                     )
@@ -77,7 +77,7 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         data={
                             CONF_ACCESS_TOKEN: None,
                             CONF_ID_TOKEN: id_token,
-                            CONF_SERVICE_AGREEMENT_ID: session.serviceAgreementID,
+                            CONF_SERVICE_AGREEMENT_ID: api.serviceAgreementID,
                             CONF_TOKEN: None,
                         },
                     )
