@@ -1,6 +1,6 @@
 import logging
 
-from auroraplus import AuroraPlusApi
+from auroraplus import AuroraPlusApi, AuroraPlusAuthenticationError
 from requests.exceptions import HTTPError
 
 from homeassistant.const import (
@@ -33,10 +33,12 @@ def aurora_init(
         api.get_info()
         api.getmonth()
 
+    except AuroraPlusAuthenticationError as e:
+        raise ConfigEntryAuthFailed("authentication failure on init") from e
     except HTTPError as e:
         status_code = e.response.status_code
         if status_code in [401, 403]:
-            raise ConfigEntryAuthFailed(e) from e
+            raise ConfigEntryAuthFailed("authentication failure on init") from e
         raise e
 
     return api

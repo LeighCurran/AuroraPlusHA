@@ -1,6 +1,6 @@
 import logging
 
-from auroraplus import AuroraPlusApi
+from auroraplus import AuroraPlusApi, AuroraPlusAuthenticationError
 from requests.exceptions import HTTPError
 
 from homeassistant.const import (
@@ -70,14 +70,13 @@ class AuroraPlusCoordinator:
             _LOGGER.info(
                 "Successfully obtained data from " + self._api.day["StartDate"]
             )
+        except AuroraPlusAuthenticationError as e:
+            raise ConfigEntryAuthFailed("authentication failure on update") from e
         except HTTPError as e:
             status_code = e.response.status_code
             if status_code in [401, 403]:
-                raise ConfigEntryAuthFailed(e) from e
+                raise ConfigEntryAuthFailed("authentication failure on update") from e
             raise e
-        except Exception as e:
-            _LOGGER.warning(f"Error updating data: {e}")
-            _LOGGER.exception(e)
 
     @classmethod
     async def update_listener(cls, hass, config_entry):
