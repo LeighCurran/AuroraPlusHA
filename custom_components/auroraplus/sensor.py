@@ -1,4 +1,5 @@
 """Support for Aurora+"""
+
 import datetime
 import logging
 
@@ -50,49 +51,40 @@ from .const import (
     SENSOR_KILOWATTHOURUSAGE,
     SENSOR_KILOWATTHOURUSAGETARIFF,
 )
-from .coordinator import AuroraCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass, config_entry,
-                               async_add_entities,
-                               discovery_info=None):
+async def async_setup_entry(
+    hass, config_entry, async_add_entities, discovery_info=None
+):
     """Set up the Aurora+ platform for sensors."""
     config = hass.data[DOMAIN][config_entry.entry_id]
-    name = 'AuroraPlus'
+    name = "AuroraPlus"
     rounding = config.get(CONF_ROUNDING, DEFAULT_ROUNDING)
 
     coordinator = config_entry.runtime_data
     await coordinator.async_update()
 
-    tariffs = coordinator.month['TariffTypes']
+    tariffs = coordinator.month["TariffTypes"]
     if not tariffs:
-        raise ConfigEntryNotReady('Empty tariffs in returned data')
+        raise ConfigEntryNotReady("Empty tariffs in returned data")
 
-    sensors_energy = [
-        f'{SENSOR_KILOWATTHOURUSAGETARIFF} {t}'
-        for t in tariffs
-    ]
-    sensors_cost = [
-        f'{SENSOR_DOLLARVALUEUSAGETARIFF} {t}'
-        for t in tariffs
-    ]
+    sensors_energy = [f"{SENSOR_KILOWATTHOURUSAGETARIFF} {t}" for t in tariffs]
+    sensors_cost = [f"{SENSOR_DOLLARVALUEUSAGETARIFF} {t}" for t in tariffs]
 
-
-    async_add_entities([
-        AuroraSensor(hass,
-                     sensor, name,
-                     coordinator, rounding)
-        for sensor in config.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED)
-    ] + [
-        AuroraHistoricalSensor(hass,
-                               sensor, name,
-                               coordinator, rounding)
-        for sensor in sensors_energy + sensors_cost
-    ],
-        True)
-    _LOGGER.info(f'Aurora+ platform ready with tariffs {tariffs}')
+    async_add_entities(
+        [
+            AuroraSensor(hass, sensor, name, coordinator, rounding)
+            for sensor in config.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED)
+        ]
+        + [
+            AuroraHistoricalSensor(hass, sensor, name, coordinator, rounding)
+            for sensor in sensors_energy + sensors_cost
+        ],
+        True,
+    )
+    _LOGGER.info(f"Aurora+ platform ready with tariffs {tariffs}")
 
 
 class AuroraSensor(SensorEntity):
@@ -101,17 +93,15 @@ class AuroraSensor(SensorEntity):
     def __init__(self, hass, sensor, name, coordinator, rounding):
         """Initialize the Aurora+ sensor."""
         self._hass = hass
-        self._name = (name + ' '
-                      + coordinator.service_agreement_id + ' '
-                      + sensor)
+        self._name = name + " " + coordinator.service_agreement_id + " " + sensor
         self._sensor = sensor
         self._unit_of_measurement = None
         self._state = None
         self._last_reset = None
         self._coordinator = coordinator
-        self._uniqueid = self._name.replace(' ', '_').lower()
+        self._uniqueid = self._name.replace(" ", "_").lower()
         self._rounding = rounding
-        _LOGGER.debug(f'{self._sensor} created')
+        _LOGGER.debug(f"{self._sensor} created")
 
     @property
     def name(self):
@@ -162,14 +152,14 @@ class AuroraSensor(SensorEntity):
             return self._coordinator.KilowattHourUsage
         elif self._sensor == SENSOR_ESTIMATEDBALANCE:
             attributes = {}
-            attributes['Amount Owed'] = self._coordinator.AmountOwed
-            attributes['Average Daily Usage'] = self._coordinator.AverageDailyUsage
-            attributes['Usage Days Remaining'] = self._coordinator.UsageDaysRemaining
-            attributes['Actual Balance'] = self._coordinator.ActualBalance
-            attributes['Unbilled Amount'] = self._coordinator.UnbilledAmount
-            attributes['Bill Total Amount'] = self._coordinator.BillTotalAmount
-            attributes['Number Of Unpaid Bills'] = self._coordinator.NumberOfUnpaidBills
-            attributes['Bill Overdue Amount'] = self._coordinator.BillOverDueAmount
+            attributes["Amount Owed"] = self._coordinator.AmountOwed
+            attributes["Average Daily Usage"] = self._coordinator.AverageDailyUsage
+            attributes["Usage Days Remaining"] = self._coordinator.UsageDaysRemaining
+            attributes["Actual Balance"] = self._coordinator.ActualBalance
+            attributes["Unbilled Amount"] = self._coordinator.UnbilledAmount
+            attributes["Bill Total Amount"] = self._coordinator.BillTotalAmount
+            attributes["Number Of Unpaid Bills"] = self._coordinator.NumberOfUnpaidBills
+            attributes["Bill Overdue Amount"] = self._coordinator.BillOverDueAmount
             return attributes
 
     async def async_update(self):
@@ -180,21 +170,22 @@ class AuroraSensor(SensorEntity):
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
             estimated_balance = self._coordinator.EstimatedBalance
             try:
-                self._state = round(
-                    float(estimated_balance), self._rounding)
+                self._state = round(float(estimated_balance), self._rounding)
             except TypeError:
                 self._state = None
         elif self._sensor == SENSOR_DOLLARVALUEUSAGE:
             self._state = round(
-                self._coordinator.DollarValueUsage.get('Total', float('nan')),
-                self._rounding)
+                self._coordinator.DollarValueUsage.get("Total", float("nan")),
+                self._rounding,
+            )
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:
             self._state = round(
-                self._coordinator.KilowattHourUsage.get('Total', float('nan')),
-                self._rounding)
+                self._coordinator.KilowattHourUsage.get("Total", float("nan")),
+                self._rounding,
+            )
 
         else:
-            _LOGGER.warning(f'{self._sensor}: Unknown sensor type')
+            _LOGGER.warning(f"{self._sensor}: Unknown sensor type")
         if self._old_state and self._state != self._old_state:
             self._last_reset = datetime.datetime.now()
 
@@ -203,16 +194,14 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
     def __init__(self, hass, sensor, name, coordinator, rounding):
         """Initialize the Aurora+ sensor."""
         self._hass = hass
-        self._name = (name + ' '
-                      + coordinator.service_agreement_id + ' '
-                      + sensor)
+        self._name = name + " " + coordinator.service_agreement_id + " " + sensor
         self._sensor = sensor
         self._unit_of_measurement = None
         self._attr_historical_states = []
         self._coordinator = coordinator
-        self._uniqueid = self._name.replace(' ', '_').lower()
+        self._uniqueid = self._name.replace(" ", "_").lower()
         self._rounding = rounding
-        _LOGGER.debug(f'{self._sensor} created (historical)')
+        _LOGGER.debug(f"{self._sensor} created (historical)")
 
     @property
     def name(self):
@@ -235,9 +224,7 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         elif self._sensor.startswith(SENSOR_KILOWATTHOURUSAGETARIFF):
             return SensorDeviceClass.ENERGY
         else:
-            raise IntegrationError(
-                f'{self._sensor} is not handled by {self.__class__}'
-            )
+            raise IntegrationError(f"{self._sensor} is not handled by {self.__class__}")
 
     @property
     def unique_id(self):
@@ -246,7 +233,7 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
 
     @property
     def statistic_id(self) -> str:
-        return 'sensor.' + self._uniqueid
+        return "sensor." + self._uniqueid
 
     @property
     def unit_of_measurement(self):
@@ -263,21 +250,15 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
 
     async def async_update_historical(self):
         if self.device_class == SensorDeviceClass.MONETARY:
-            tariff = self._sensor.removeprefix(
-                SENSOR_DOLLARVALUEUSAGETARIFF
-            ).strip()
-            field = 'DollarValueUsage'
+            tariff = self._sensor.removeprefix(SENSOR_DOLLARVALUEUSAGETARIFF).strip()
+            field = "DollarValueUsage"
         elif self._sensor.startswith(SENSOR_KILOWATTHOURUSAGETARIFF):
-            tariff = self._sensor.removeprefix(
-                SENSOR_KILOWATTHOURUSAGETARIFF
-            ).strip()
-            field = 'KilowattHourUsage'
+            tariff = self._sensor.removeprefix(SENSOR_KILOWATTHOURUSAGETARIFF).strip()
+            field = "KilowattHourUsage"
 
         await self._coordinator.async_update()
 
-        metered_records = self._coordinator.day.get(
-            'MeteredUsageRecords'
-        )
+        metered_records = self._coordinator.day.get("MeteredUsageRecords")
         if metered_records is None:
             _LOGGER.warning(
                 f"{self._sensor}: no metered records, can't obtain hourly data"
@@ -287,12 +268,10 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         self._attr_historical_states = [
             HistoricalState(
                 state=abs(float(r[field][tariff])),
-                dt=datetime.datetime.fromisoformat(r['StartTime'])
+                dt=datetime.datetime.fromisoformat(r["StartTime"]),
             )
             for r in metered_records
-            if r
-            and r.get(field)
-            and r.get(field).get(tariff)
+            if r and r.get(field) and r.get(field).get(tariff)
         ]
 
         if not self._attr_historical_states:
@@ -300,8 +279,9 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
                 f"{self._sensor}: empty historical states for tariff {tariff}"
             )
 
-        _LOGGER.debug(f'{self._sensor}: historical states: %s',
-                      self._attr_historical_states)
+        _LOGGER.debug(
+            f"{self._sensor}: historical states: %s", self._attr_historical_states
+        )
 
     def get_statistic_metadata(self) -> StatisticMetaData:
         meta = super().get_statistic_metadata()
@@ -322,7 +302,7 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         cost only, both as part of the same data array. The format allows us to
         calculate correct statistics by simply ignoring the empty records.
         """
-        accumulated = latest.get('sum', 0) if latest else 0
+        accumulated = latest.get("sum", 0) if latest else 0
 
         ret = []
 
@@ -336,6 +316,5 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
                 )
             )
 
-        _LOGGER.debug(f'{self._sensor}: calculated statistics %s',
-                      ret)
+        _LOGGER.debug(f"{self._sensor}: calculated statistics %s", ret)
         return ret
