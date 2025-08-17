@@ -63,4 +63,5 @@ and follow the instructions (open link, enter MFA, copy URL of error page back).
    They are currently believed to be harmless, and stop happening after a
    restart.
 
-3. While this should support multiple services at once, this hasn't been tested.
+3. Support for multiple services is not complete, and would rely on similar
+   functionality not available in the Python library yet.
