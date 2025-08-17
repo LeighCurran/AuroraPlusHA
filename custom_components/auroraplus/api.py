@@ -24,6 +24,7 @@ def aurora_init(
     id_token: str | None = None,
     access_token: str | None = None,
 ):
+    _LOGGER.debug(f"aurora_init {token=} {id_token=} {access_token=}")
     try:
         api = AuroraPlusApi(token=token, id_token=id_token, access_token=access_token)
 

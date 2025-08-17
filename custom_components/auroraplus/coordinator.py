@@ -42,6 +42,11 @@ class AuroraPlusCoordinator:
 
     @Throttle(min_time=DEFAULT_SCAN_INTERVAL)  # XXX: should be configurable
     async def async_update(self):
+        _LOGGER.debug("running async_update ...")
+        try:
+            _LOGGER.debug(f"... {self._throttle=}")
+        except:  # noqa: E722
+            _LOGGER.debug("... no throttle")
         try:
             await self._hass.async_add_executor_job(self._api_update)
         except PlatformNotReady as exc:
@@ -95,17 +100,18 @@ class AuroraPlusCoordinator:
         cls._instances[service_agreement_id].update_api(api)
 
     def update_api(self, api):
+        _LOGGER.debug(f"updating {self=} to use {api=}")
         self._api = api
 
     def __getattr__(self, attr):
         """Forward any attribute access to the session, or handle error"""
         if attr == "_throttle":
             raise AttributeError()
-        _LOGGER.debug(f"Accessing data for {attr}")
+        # _LOGGER.debug(f"Accessing data for {attr}")
         try:
             data = getattr(self._api, attr)
         except AttributeError:
             _LOGGER.debug(f"Data for {attr} not yet available")
             return {}  # empty with a get
-        _LOGGER.debug(f"... returning {data}")
+        # _LOGGER.debug(f"... returning {data}")
         return data
