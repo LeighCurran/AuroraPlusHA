@@ -91,12 +91,32 @@ class AuroraPlusCoordinator:
         XXX: find the api object for the entitie, and update its session token
         """
         service_agreement_id = config_entry.data.get(CONF_SERVICE_AGREEMENT_ID)
-        id_token = config_entry.data.get(CONF_ID_TOKEN)
-        if not id_token:
-            access_token = config_entry.data.get(CONF_ACCESS_TOKEN)
+        token = config_entry.data.get(CONF_TOKEN)
+        if token == cls._instances[service_agreement_id]._api.token:
+            _LOGGER.debug(
+                f"update_listener for {service_agreement_id} with unmodified token"
+            )
+            return
+
+        if token:
+            _LOGGER.debug(f"update_listener for {service_agreement_id} with {token=}")
+            api = await hass.async_add_executor_job(aurora_init, token)
+        elif id_token := config_entry.data.get(CONF_ID_TOKEN):
+            _LOGGER.debug(
+                f"update_listener for {service_agreement_id} with {id_token=}"
+            )
+            api = await hass.async_add_executor_job(aurora_init, {}, id_token)
+        elif access_token := config_entry.data.get(CONF_ACCESS_TOKEN):
+            _LOGGER.debug(
+                f"update_listener for {service_agreement_id} with {access_token=}"
+            )
             api = await hass.async_add_executor_job(aurora_init, {}, None, access_token)
         else:
-            api = await hass.async_add_executor_job(aurora_init, {}, id_token)
+            _LOGGER.warning(
+                "update_listener for {service_agreement_id} with no usable token"
+            )
+            return
+
         cls._instances[service_agreement_id].update_api(api)
 
     def update_api(self, api):
