@@ -34,9 +34,7 @@ class AuroraPlusCoordinator:
         self._config_entry = config_entry
         self._api = api
         self.service_agreement_id = api.serviceAgreementID
-        self.service_address = api.month["ServiceAgreements"][api.serviceAgreementID][
-            "PremiseName"
-        ]
+        self.service_address = api.premiseAddress
         self.__class__._instances[self.service_agreement_id] = self
         _LOGGER.debug(f"AuroraPlusCoordinator ready with {self._api}")
 

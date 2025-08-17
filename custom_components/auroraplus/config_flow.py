@@ -51,9 +51,7 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             id_token = user_input.get(CONF_ID_TOKEN)
             try:
                 api = await self.hass.async_add_executor_job(aurora_init, {}, id_token)
-                address = api.month["ServiceAgreements"][
-                    api.serviceAgreementID
-                ]["PremiseName"]
+                address = api.premiseAddress
                 await self.async_set_unique_id(api.serviceAgreementID)
 
                 if self.reauth_entry:

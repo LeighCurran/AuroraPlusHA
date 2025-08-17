@@ -32,7 +32,6 @@ def aurora_init(
         # AuroraPlusCoordinator.__init__, however HomeAssistant is not happy if the calls are made
         # there.
         api.get_info()
-        api.getmonth()
 
     except AuroraPlusAuthenticationError as e:
         raise ConfigEntryAuthFailed("authentication failure on init") from e
