@@ -6,7 +6,11 @@ from requests.exceptions import HTTPError
 from homeassistant.const import (
     CONF_ACCESS_TOKEN,
 )
-from homeassistant.exceptions import ConfigEntryAuthFailed, PlatformNotReady
+from homeassistant.exceptions import (
+    ConfigEntryAuthFailed,
+    PlatformNotReady,
+    ConfigEntryNotReady,
+)
 from homeassistant.util import Throttle
 
 from .const import (
@@ -28,10 +32,12 @@ def aurora_init(
     try:
         api = AuroraPlusApi(token=token, id_token=id_token, access_token=access_token)
 
-        # We need this data pulled so we can get the serviceAgreementID in
-        # AuroraPlusCoordinator.__init__, however HomeAssistant is not happy if the calls are made
-        # there.
+        # We need this data in AuroraPlusCoordinator.__init__so we have the
+        # serviceAgreementID, preiseAddress, and tariffs over the year,
+        # however HomeAssistant is not happy if the calls are made there.
+
         api.get_info()
+        api.getyear()
 
     except AuroraPlusAuthenticationError as e:
         raise ConfigEntryAuthFailed("authentication failure on init") from e

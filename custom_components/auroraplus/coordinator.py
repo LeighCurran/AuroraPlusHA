@@ -63,9 +63,8 @@ class AuroraPlusCoordinator:
 
     def _api_update(self):
         try:
-            self._api.get_info()
-
             self._api.getcurrent()
+
             for i in range(-1, -10, -1):
                 self._api.getday(i)
                 if not self._api.day["NoDataFlag"]:

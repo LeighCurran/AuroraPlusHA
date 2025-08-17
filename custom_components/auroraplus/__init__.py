@@ -15,7 +15,8 @@ from homeassistant.const import (
     UnitOfEnergy,
 )
 from homeassistant.exceptions import (
-        PlatformNotReady
+        ConfigEntryNotReady,
+        PlatformNotReady,
 )
 
 
@@ -47,6 +48,12 @@ async def async_setup_entry(hass, entry):
     )
 
     entry.runtime_data = AuroraPlusCoordinator(hass, entry, api)
+
+    if not (
+            hasattr(entry.runtime_data, "year")
+            and entry.runtime_data.year.get("TariffTypes")
+            ):
+        raise ConfigEntryNotReady("No tariffs in returned data, yet")
 
     await hass.config_entries.async_forward_entry_setups(
         entry, ["sensor"]
