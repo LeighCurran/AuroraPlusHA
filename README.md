@@ -53,11 +53,11 @@ and follow the instructions (open link, enter MFA, copy URL of error page back).
 
 ## CAVEATs
 
-1. Upon adding the integration, only sensors with readings on the previous day
-   will be available to add to the energy dashboard. This could be a problem if
-   the previous day was a full-day off-peak day, as the peak tariff won't show
-   up. Simply restart Home Assistant on a day after the missing tariff was used
-   for a sensor to be created.
+1. Upon adding the integration, only sensors with readings on the previous
+   week will be available to add to the energy dashboard. This could be
+   an issue if the plan was just changed. Sensors for the new tariffs won't
+   show up. Simply restart Home Assistant the next week for new sensors to
+   be created.
 
 2. Upon reauthenticating, a bunch of SQLAlchemyError will prop up in the logs.
    They are currently believed to be harmless, and stop happening after a

@@ -66,7 +66,7 @@ async def async_setup_entry(
     coordinator = config_entry.runtime_data
     await coordinator.async_update()
 
-    tariffs = coordinator.year.get("TariffTypes")
+    tariffs = coordinator.week.get("TariffTypes")
 
     sensors_energy = [f"{SENSOR_KILOWATTHOURUSAGETARIFF} {t}" for t in tariffs]
     sensors_cost = [f"{SENSOR_DOLLARVALUEUSAGETARIFF} {t}" for t in tariffs]

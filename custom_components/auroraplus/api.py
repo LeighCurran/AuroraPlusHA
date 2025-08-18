@@ -33,11 +33,11 @@ def aurora_init(
         api = AuroraPlusApi(token=token, id_token=id_token, access_token=access_token)
 
         # We need this data in AuroraPlusCoordinator.__init__so we have the
-        # serviceAgreementID, preiseAddress, and tariffs over the year,
-        # however HomeAssistant is not happy if the calls are made there.
+        # serviceAgreementID, preiseAddress, and tariffs over the previous
+        # week however HomeAssistant is not happy if the calls are made there.
 
         api.get_info()
-        api.getyear()
+        api.getweek()
 
     except AuroraPlusAuthenticationError as e:
         raise ConfigEntryAuthFailed("authentication failure on init") from e
