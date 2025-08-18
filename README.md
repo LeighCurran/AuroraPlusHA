@@ -1,10 +1,10 @@
 [![buy me a coffee](https://img.shields.io/badge/If%20you%20like%20it-Buy%20us%20a%20coffee-green.svg?style=for-the-badge)](https://www.buymeacoffee.com/leighcurran)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
-![Maintenance](https://img.shields.io/maintenance/yes/2022.svg?style=for-the-badge)
+![Maintenance](https://img.shields.io/maintenance/yes/2025.svg?style=for-the-badge)
 
 # Aurora+ for Home Assistant
 
-The Aurora+ integration adds support for retriving data from the Aurora+ API such as:
+The Aurora+ integration adds support for retrieving data from the Aurora+ API such as:
 
 - EstimatedBalance - This is shown in the Aurora+ app as 'Balance'
 - UsageDaysRemaining - This is shown in the Aurora+ app as 'Days Prepaid'
@@ -63,5 +63,5 @@ and follow the instructions (open link, enter MFA, copy URL of error page back).
    They are currently believed to be harmless, and stop happening after a
    restart.
 
-3. Support for multiple services is not complete, and would rely on similar
+3. Support for multiple services is not complete, and would rely on matching
    functionality not available in the Python library yet.
