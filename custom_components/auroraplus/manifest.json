@@ -5,7 +5,10 @@
   "issue_tracker": "https://github.com/LeighCurran/AuroraPlusHA/issues",
   "dependencies": [],
   "codeowners": ["@LeighCurran"],
-  "requirements": ["AuroraPlus==1.1.6"],
+  "requirements": [
+      "auroraplus@git+https://github.com/shtrom/AuroraPlus@oauth-mfa-token",
+      "homeassistant-historical-sensor==2.0.0rc5"
+  ],
   "iot_class": "cloud_polling",
   "config_flow": false,
   "version": "1.1.9"
