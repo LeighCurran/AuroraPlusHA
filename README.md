@@ -53,15 +53,21 @@ and follow the instructions (open link, enter MFA, copy URL of error page back).
 
 ## CAVEATs
 
-1. Upon adding the integration, only sensors with readings on the previous
+1. The Aurora+ API doesn't deliver real-time metering, so the data for current
+   usage will always be unavailable. It only provides updates containing data
+   for the previous day, in daily batches. Those batches may not be available
+   until late the next day, leading to a lag of 1 to 2 days in the energy
+   dashboard.
+
+2. Upon adding the integration, only tariffs with readings on the previous
    week will be available to add to the energy dashboard. This could be
    an issue if the plan was just changed. Sensors for the new tariffs won't
    show up. Simply restart Home Assistant the next week for new sensors to
    be created.
 
-2. Upon reauthenticating, a bunch of SQLAlchemyError will prop up in the logs.
+3. Upon reauthenticating, a bunch of SQLAlchemyError will prop up in the logs.
    They are currently believed to be harmless, and stop happening after a
    restart.
 
-3. Support for multiple services is not complete, and would rely on matching
+4. Support for multiple services is not complete, and would rely on matching
    functionality not available in the Python library yet.

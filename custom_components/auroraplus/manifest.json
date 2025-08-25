@@ -4,9 +4,9 @@
   "documentation": "https://github.com/LeighCurran/AuroraPlusHA",
   "issue_tracker": "https://github.com/LeighCurran/AuroraPlusHA/issues",
   "dependencies": [],
-  "codeowners": ["@LeighCurran"],
+  "codeowners": ["@LeighCurran","@shtrom"],
   "requirements": [
-      "auroraplus@git+https://github.com/shtrom/AuroraPlus@refresh_token",
+      "auroraplus@git+https://github.com/LeighCurran/AuroraPlus@main",
       "homeassistant-historical-sensor==2.0.0rc6"
   ],
   "loggers": [ "auroraplus" ],
