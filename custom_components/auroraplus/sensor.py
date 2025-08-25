@@ -3,14 +3,11 @@
 import datetime
 import logging
 
-import voluptuous as vol
 
 from homeassistant.exceptions import (
-    ConfigEntryNotReady,
     IntegrationError,
 )
 
-import homeassistant.helpers.config_validation as cv
 from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
@@ -25,10 +22,7 @@ from homeassistant.components.sensor.const import (
     SensorDeviceClass,
 )
 from homeassistant.const import (
-    CONF_ACCESS_TOKEN,
     CONF_MONITORED_CONDITIONS,
-    CONF_NAME,
-    CONF_SCAN_INTERVAL,
     CURRENCY_DOLLAR,
     UnitOfEnergy,
 )
@@ -38,7 +32,6 @@ from homeassistant_historical_sensor import (
     PollUpdateMixin,
 )
 
-from .api import aurora_init
 from .const import (
     CONF_ROUNDING,
     DEFAULT_MONITORED,

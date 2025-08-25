@@ -3,22 +3,10 @@ import logging
 from auroraplus import AuroraPlusApi, AuroraPlusAuthenticationError
 from requests.exceptions import HTTPError
 
-from homeassistant.const import (
-    CONF_ACCESS_TOKEN,
-)
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
-    PlatformNotReady,
-    ConfigEntryNotReady,
 )
-from homeassistant.util import Throttle
 
-from .const import (
-    CONF_TOKEN,
-    CONF_ID_TOKEN,
-    CONF_SERVICE_AGREEMENT_ID,
-    DEFAULT_SCAN_INTERVAL,
-)
 
 _LOGGER = logging.getLogger(__name__)
 
