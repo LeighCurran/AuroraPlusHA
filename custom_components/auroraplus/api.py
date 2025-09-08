@@ -1,0 +1,38 @@
+import logging
+
+from auroraplus import AuroraPlusApi, AuroraPlusAuthenticationError
+from requests.exceptions import HTTPError
+
+from homeassistant.exceptions import (
+    ConfigEntryAuthFailed,
+)
+
+
+_LOGGER = logging.getLogger(__name__)
+
+
+def aurora_init(
+    token: dict = {},
+    id_token: str | None = None,
+    access_token: str | None = None,
+):
+    _LOGGER.debug(f"aurora_init {token=} {id_token=} {access_token=}")
+    try:
+        api = AuroraPlusApi(token=token, id_token=id_token, access_token=access_token)
+
+        # We need this data in AuroraPlusCoordinator.__init__so we have the
+        # serviceAgreementID, preiseAddress, and tariffs over the previous
+        # week however HomeAssistant is not happy if the calls are made there.
+
+        api.get_info()
+        api.getweek()
+
+    except AuroraPlusAuthenticationError as e:
+        raise ConfigEntryAuthFailed("authentication failure on init") from e
+    except HTTPError as e:
+        status_code = e.response.status_code
+        if status_code in [401, 403]:
+            raise ConfigEntryAuthFailed("authentication failure on init") from e
+        raise e
+
+    return api

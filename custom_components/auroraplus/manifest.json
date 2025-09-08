@@ -4,12 +4,13 @@
   "documentation": "https://github.com/LeighCurran/AuroraPlusHA",
   "issue_tracker": "https://github.com/LeighCurran/AuroraPlusHA/issues",
   "dependencies": [],
-  "codeowners": ["@LeighCurran"],
+  "codeowners": ["@LeighCurran","@shtrom"],
   "requirements": [
-      "auroraplus@git+https://github.com/shtrom/AuroraPlus@oauth-mfa-token",
-      "homeassistant-historical-sensor==2.0.0rc5"
+      "auroraplus@git+https://github.com/LeighCurran/AuroraPlus@main",
+      "homeassistant-historical-sensor==2.0.0rc6"
   ],
+  "loggers": [ "auroraplus" ],
   "iot_class": "cloud_polling",
-  "config_flow": false,
-  "version": "1.1.9"
+  "config_flow": true,
+  "version": "2.0.1"
 }

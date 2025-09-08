@@ -4,7 +4,7 @@
 
 # Aurora+ for Home Assistant
 
-The Aurora+ integration adds support for retriving data from the Aurora+ API such as:
+The Aurora+ integration adds support for retrieving data from the Aurora+ API such as:
 
 - EstimatedBalance - This is shown in the Aurora+ app as 'Balance'
 - UsageDaysRemaining - This is shown in the Aurora+ app as 'Days Prepaid'
@@ -16,20 +16,58 @@ The Aurora+ integration adds support for retriving data from the Aurora+ API suc
 - NumberOfUnpaidBills
 - BillOverDueAmount
 
+It also uses https://github.com/ldotlopez/ha-historical-sensor/ to fetch hourly
+usage from the previous day, and make it available for the Energy dashboard:
+
+- Dollar Value Usage (Total and per-Tariff)
+- Kilowatt Hour Usage (Total and per-Tariff)
+
 Note: To use the Aurora+ integration you need a valid account with Aurora.
 
 ## Configuration
-Using *YAML*: add `auroraplus` platform to your sensor configuration in `configuration.yaml`. Example:
 
-```yaml
-# Example configuration.yaml entry
-sensor:
-  - platform: auroraplus
-    name: "Power Sensor"
-    username: username@email.com
-    password: Password
-    scan_interval:
-      hours: 2
-    rounding: 1
-```
-Note: Name, scan_interval and rounding are optional. If scan_interval is not set a default value of 1 hours will be used. If rounding is not set a default value of 2 will be used. Most Aurora+ data is updated daily.
+This integration uses Home Assistant's config flow. Simply go to `Settings` /
+`Devices & Services`, choose `Add Integration`, and search for `Aurora+`.
+
+In the configuration dialog, you need to input an OAuth access key, which allows
+access to your account's data without MFA. Authentication and API access is done
+via https://github.com/shtrom/AuroraPlus/tree/oauth-mfa-token, which you can
+also use to obtain the ID token.
+
+The easiest way to get a fresh token is to use [this
+page](https://shtrom.github.io/AuroraPlus/)). Follow the instructions to login
+to AuroraPlus and provide the URL of the error page to obtain an `id_token`
+suitable to bootstrap authentication in HA.
+
+If you'd prefer not to trust a random page on the web with your AuroraPlus
+credentials, you can also obtain the token locally.  On any machine able to run
+Python (not necessarily your Home Assistant server), install the AuroraPlus
+Python module from the URL above. You can then follow the instructions at
+https://github.com/shtrom/AuroraPlus/tree/oauth-mfa-token?tab=readme-ov-file#obtain-a-token.
+
+Essentially, just run
+
+   aurora_get_token
+
+and follow the instructions (open link, enter MFA, copy URL of error page back).
+
+## CAVEATs
+
+1. The Aurora+ API doesn't deliver real-time metering, so the data for current
+   usage will always be unavailable. It only provides updates containing data
+   for the previous day, in daily batches. Those batches may not be available
+   until late the next day, leading to a lag of 1 to 2 days in the energy
+   dashboard.
+
+2. Upon adding the integration, only tariffs with readings on the previous
+   week will be available to add to the energy dashboard. This could be
+   an issue if the plan was just changed. Sensors for the new tariffs won't
+   show up. Simply restart Home Assistant the next week for new sensors to
+   be created.
+
+3. Upon reauthenticating, a bunch of SQLAlchemyError will prop up in the logs.
+   They are currently believed to be harmless, and stop happening after a
+   restart.
+
+4. Support for multiple services is not complete, and would rely on matching
+   functionality not available in the Python library yet.
