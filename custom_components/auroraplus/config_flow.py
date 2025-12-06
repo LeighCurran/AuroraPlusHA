@@ -4,9 +4,6 @@ from typing import Any
 
 import homeassistant.helpers.config_validation as cv
 from homeassistant import config_entries
-from homeassistant.const import (
-    CONF_ACCESS_TOKEN,
-)
 from homeassistant.exceptions import ConfigEntryAuthFailed
 
 
@@ -58,7 +55,6 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     self.hass.config_entries.async_update_entry(
                         self.reauth_entry,
                         data={
-                            CONF_ACCESS_TOKEN: None,
                             CONF_SERVICE_AGREEMENT_ID: api.serviceAgreementID,
                             CONF_TOKEN: token,
                         },
@@ -72,7 +68,6 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     return self.async_create_entry(
                         title=address,
                         data={
-                            CONF_ACCESS_TOKEN: None,
                             CONF_SERVICE_AGREEMENT_ID: api.serviceAgreementID,
                             CONF_TOKEN: token,
                         },

@@ -3,9 +3,6 @@ import logging
 from auroraplus import AuroraPlusApi, AuroraPlusAuthenticationError
 from requests.exceptions import HTTPError
 
-from homeassistant.const import (
-    CONF_ACCESS_TOKEN,
-)
 from homeassistant.exceptions import ConfigEntryAuthFailed, PlatformNotReady
 from homeassistant.util import Throttle
 
@@ -53,7 +50,6 @@ class AuroraPlusCoordinator:
         self._hass.config_entries.async_update_entry(
             self._config_entry,
             data={
-                CONF_ACCESS_TOKEN: self._api.token.get("access_token"),
                 CONF_SERVICE_AGREEMENT_ID: self._api.serviceAgreementID,
                 CONF_TOKEN: self._api.token,
             },
@@ -96,11 +92,6 @@ class AuroraPlusCoordinator:
         if token:
             _LOGGER.debug(f"update_listener for {service_agreement_id} with {token=}")
             api = await hass.async_add_executor_job(aurora_init, token)
-        elif access_token := config_entry.data.get(CONF_ACCESS_TOKEN):
-            _LOGGER.debug(
-                f"update_listener for {service_agreement_id} with {access_token=}"
-            )
-            api = await hass.async_add_executor_job(aurora_init, {}, None, access_token)
         else:
             _LOGGER.warning(
                 "update_listener for {service_agreement_id} with no usable token"

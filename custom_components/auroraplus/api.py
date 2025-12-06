@@ -13,11 +13,10 @@ _LOGGER = logging.getLogger(__name__)
 
 def aurora_init(
     token: dict = {},
-    access_token: str | None = None,
 ):
-    _LOGGER.debug(f"aurora_init {token=} {access_token=}")
+    _LOGGER.debug(f"aurora_init {token=}")
     try:
-        api = AuroraPlusApi(token=token, access_token=access_token)
+        api = AuroraPlusApi(token=token)
 
         # We need this data in AuroraPlusCoordinator.__init__so we have the
         # serviceAgreementID, preiseAddress, and tariffs over the previous
