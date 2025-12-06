@@ -12,7 +12,6 @@ from homeassistant.util import Throttle
 from .api import aurora_init
 from .const import (
     CONF_TOKEN,
-    CONF_ID_TOKEN,
     CONF_SERVICE_AGREEMENT_ID,
     DEFAULT_SCAN_INTERVAL,
 )
@@ -55,7 +54,6 @@ class AuroraPlusCoordinator:
             self._config_entry,
             data={
                 CONF_ACCESS_TOKEN: self._api.token.get("access_token"),
-                CONF_ID_TOKEN: self._api.token.get("id_token"),
                 CONF_SERVICE_AGREEMENT_ID: self._api.serviceAgreementID,
                 CONF_TOKEN: self._api.token,
             },
@@ -98,11 +96,6 @@ class AuroraPlusCoordinator:
         if token:
             _LOGGER.debug(f"update_listener for {service_agreement_id} with {token=}")
             api = await hass.async_add_executor_job(aurora_init, token)
-        elif id_token := config_entry.data.get(CONF_ID_TOKEN):
-            _LOGGER.debug(
-                f"update_listener for {service_agreement_id} with {id_token=}"
-            )
-            api = await hass.async_add_executor_job(aurora_init, {}, id_token)
         elif access_token := config_entry.data.get(CONF_ACCESS_TOKEN):
             _LOGGER.debug(
                 f"update_listener for {service_agreement_id} with {access_token=}"

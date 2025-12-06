@@ -36,8 +36,8 @@ also use to obtain the ID token.
 
 The easiest way to get a fresh token is to use [this
 page](https://shtrom.github.io/AuroraPlus/)). Follow the instructions to login
-to AuroraPlus and provide the URL of the error page to obtain an `id_token`
-suitable to bootstrap authentication in HA.
+to AuroraPlus and provide the URL of the error page to obtain a `token`
+suitable to bootstrap authentication in HA. It should be a full JSON payload.
 
 If you'd prefer not to trust a random page on the web with your AuroraPlus
 credentials, you can also obtain the token locally.  On any machine able to run
