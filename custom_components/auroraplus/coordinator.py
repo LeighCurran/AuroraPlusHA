@@ -69,11 +69,13 @@ class AuroraPlusCoordinator:
                 "Successfully obtained data from " + self._api.day["StartDate"]
             )
         except AuroraPlusAuthenticationError as e:
-            raise ConfigEntryAuthFailed("authentication failure on update") from e
+            _LOGGER.exception("authentication failure on update")
+            self._config_entry.async_start_reauth(self._hass)
         except HTTPError as e:
             status_code = e.response.status_code
             if status_code in [401, 403]:
-                raise ConfigEntryAuthFailed("authentication failure on update") from e
+                _LOGGER.exception("authentication failure on update")
+                self._config_entry.async_start_reauth(self._hass)
             raise e
 
     @classmethod
