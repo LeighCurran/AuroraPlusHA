@@ -42,11 +42,12 @@ class AuroraPlusCoordinator:
         except:  # noqa: E722
             _LOGGER.debug("... no throttle")
         try:
-            await self._hass.async_add_executor_job(self._api_update)
+            await self._api_update()
         except PlatformNotReady as exc:
             _LOGGER.warning("AuroraPlusCoordinator not ready for data update yet")
             _LOGGER.exception(exc)
 
+        _LOGGER.debug("updating token in config_entry ...")
         self._hass.config_entries.async_update_entry(
             self._config_entry,
             data={
@@ -54,15 +55,16 @@ class AuroraPlusCoordinator:
                 CONF_TOKEN: self._api.token,
             },
         )
+        _LOGGER.debug("token updated")
 
-    def _api_update(self):
+    async def _api_update(self):
         try:
-            self._api.getcurrent()
+            await self._hass.async_add_executor_job(self._api.getcurrent)
 
             for i in range(-1, -10, -1):
-                self._api.getday(i)
+                await self._hass.async_add_executor_job(self._api.getday, i)
                 if not self._api.day["NoDataFlag"]:
-                    self._api.getsummary(i)
+                    await self._hass.async_add_executor_job(self._api.getsummary, i)
                     break
                 _LOGGER.debug(f"No data at index {i}")
             _LOGGER.info(
@@ -77,6 +79,8 @@ class AuroraPlusCoordinator:
                 _LOGGER.exception("authentication failure on update")
                 self._config_entry.async_start_reauth(self._hass)
             raise e
+
+        await self.update_listener(self._hass, self._config_entry)
 
     @classmethod
     async def update_listener(cls, hass, config_entry):
