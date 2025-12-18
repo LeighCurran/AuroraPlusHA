@@ -31,7 +31,7 @@ This integration uses Home Assistant's config flow. Simply go to `Settings` /
 
 In the configuration dialog, you need to input an OAuth access key, which allows
 access to your account's data without MFA. Authentication and API access is done
-via https://github.com/shtrom/AuroraPlus/tree/oauth-mfa-token, which you can
+via https://github.com/LeighCurran/AuroraPlus/, which you can
 also use to obtain the ID token.
 
 The easiest way to get a fresh token is to use [this
@@ -43,7 +43,7 @@ If you'd prefer not to trust a random page on the web with your AuroraPlus
 credentials, you can also obtain the token locally.  On any machine able to run
 Python (not necessarily your Home Assistant server), install the AuroraPlus
 Python module from the URL above. You can then follow the instructions at
-https://github.com/shtrom/AuroraPlus/tree/oauth-mfa-token?tab=readme-ov-file#obtain-a-token.
+https://github.com/LeighCurran/AuroraPlus/tree/main?tab=readme-ov-file#obtain-a-token.
 
 Essentially, just run
 
