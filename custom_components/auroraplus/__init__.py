@@ -17,9 +17,6 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry):
     """Set up entry."""
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = dict(entry.data)
-
     token = entry.data.get(CONF_TOKEN)
 
     try:

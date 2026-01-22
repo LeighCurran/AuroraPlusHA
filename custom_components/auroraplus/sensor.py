@@ -52,9 +52,8 @@ async def async_setup_entry(
     hass, config_entry, async_add_entities, discovery_info=None
 ):
     """Set up the Aurora+ platform for sensors."""
-    config = hass.data[DOMAIN][config_entry.entry_id]
     name = "AuroraPlus"
-    rounding = config.get(CONF_ROUNDING, DEFAULT_ROUNDING)
+    rounding = DEFAULT_ROUNDING
 
     coordinator = config_entry.runtime_data
     await coordinator.async_update()
@@ -67,7 +66,7 @@ async def async_setup_entry(
     async_add_entities(
         [
             AuroraSensor(hass, sensor, name, coordinator, rounding)
-            for sensor in config.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED)
+            for sensor in DEFAULT_MONITORED
         ]
         + [
             AuroraHistoricalSensor(hass, sensor, name, coordinator, rounding)
