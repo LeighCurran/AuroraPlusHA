@@ -47,7 +47,7 @@ class AuroraPlusCoordinator:
             _LOGGER.warning("AuroraPlusCoordinator not ready for data update yet")
             _LOGGER.exception(exc)
 
-        _LOGGER.debug("updating token in config_entry ...")
+        _LOGGER.debug(f"updating token in config_entry {self._api.token=}...")
         self._hass.config_entries.async_update_entry(
             self._config_entry,
             data={
@@ -68,7 +68,9 @@ class AuroraPlusCoordinator:
                     break
                 _LOGGER.debug(f"No data at index {i}")
             _LOGGER.info(
-                "Successfully obtained data from " + self._api.day["StartDate"]
+                "Successfully obtained data from "
+                + self._api.day["StartDate"]
+                + f" with {self._api.token}"
             )
         except AuroraPlusAuthenticationError as e:
             _LOGGER.exception("authentication failure on update")
@@ -85,19 +87,20 @@ class AuroraPlusCoordinator:
     @classmethod
     async def update_listener(cls, hass, config_entry):
         """
-        XXX: find the api object for the entitie, and update its session token
+        XXX: find the api object for the entity, and update its session token
         """
         service_agreement_id = config_entry.data.get(CONF_SERVICE_AGREEMENT_ID)
-        token = config_entry.data.get(CONF_TOKEN)
-        if token == cls._instances[service_agreement_id]._api.token:
+        api_token = config_entry.data.get(CONF_TOKEN)
+        entry_token = cls._instances[service_agreement_id]._api.token
+        if api_token == entry_token:
             _LOGGER.debug(
-                f"update_listener for {service_agreement_id} with unmodified token"
+                f"update_listener for {service_agreement_id} with unmodified token {api_token=} == {entry_token}"
             )
             return
 
         if token:
             _LOGGER.debug(f"update_listener for {service_agreement_id} with {token=}")
-            api = await hass.async_add_executor_job(aurora_init, token)
+            api = await hass.async_add_executor_job(aurora_init, api_token)
         else:
             _LOGGER.warning(
                 "update_listener for {service_agreement_id} with no usable token"
