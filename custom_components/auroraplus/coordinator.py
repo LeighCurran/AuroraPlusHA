@@ -48,14 +48,14 @@ class AuroraPlusCoordinator:
             _LOGGER.exception(exc)
 
         _LOGGER.debug(f"updating token in config_entry {self._api.token=}...")
-        self._hass.config_entries.async_update_entry(
+        updated = self._hass.config_entries.async_update_entry(
             self._config_entry,
             data={
                 CONF_SERVICE_AGREEMENT_ID: self._api.serviceAgreementID,
                 CONF_TOKEN: self._api.token,
             },
         )
-        _LOGGER.debug("token updated")
+        _LOGGER.debug(f"token updated in config_entry: {updated=}")
 
     async def _api_update(self):
         try:
@@ -90,16 +90,18 @@ class AuroraPlusCoordinator:
         XXX: find the api object for the entity, and update its session token
         """
         service_agreement_id = config_entry.data.get(CONF_SERVICE_AGREEMENT_ID)
-        api_token = config_entry.data.get(CONF_TOKEN)
-        entry_token = cls._instances[service_agreement_id]._api.token
-        if api_token == entry_token:
+        entry_token = config_entry.data.get(CONF_TOKEN)
+        api_token = cls._instances[service_agreement_id]._api.token
+        if entry_token == api_token:
             _LOGGER.debug(
-                f"update_listener for {service_agreement_id} with unmodified token {api_token=} == {entry_token}"
+                f"update_listener for {service_agreement_id} with unmodified token {entry_token=} == {api_token=}"
             )
             return
 
-        if token:
-            _LOGGER.debug(f"update_listener for {service_agreement_id} with {token=}")
+        if api_token:
+            _LOGGER.debug(
+                f"update_listener for {service_agreement_id} with {api_token=}"
+            )
             api = await hass.async_add_executor_job(aurora_init, api_token)
         else:
             _LOGGER.warning(
