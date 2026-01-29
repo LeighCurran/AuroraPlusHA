@@ -6,11 +6,10 @@ from homeassistant.core import HomeAssistant
 from auroraplus import AuroraPlusApi, AuroraPlusAuthenticationError
 from requests.exceptions import HTTPError
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.util import Throttle
 
-from .api import aurora_init
 from .const import (
     CONF_TOKEN,
     CONF_SERVICE_AGREEMENT_ID,
@@ -56,16 +55,6 @@ class AuroraPlusCoordinator:
             _LOGGER.warning("AuroraPlusCoordinator not ready for data update yet")
             _LOGGER.exception(exc)
 
-        _LOGGER.debug(f"updating token in config_entry {self._api.token=}...")
-        updated = self._hass.config_entries.async_update_entry(
-            self._config_entry,
-            data={
-                CONF_SERVICE_AGREEMENT_ID: self._api.serviceAgreementID,
-                CONF_TOKEN: self._api.token,
-            },
-        )
-        _LOGGER.debug(f"token updated in config_entry: {updated=}")
-
     async def _api_update(self):
         try:
             await self._hass.async_add_executor_job(self._api.getcurrent)
@@ -77,54 +66,50 @@ class AuroraPlusCoordinator:
                     break
                 _LOGGER.debug(f"No data at index {i}")
             _LOGGER.info(
-                "Successfully obtained data from "
-                + self._api.day["StartDate"]
-                + f" with {self._api.token}"
+                "Successfully obtained data from " + self._api.day["StartDate"]
             )
-        except AuroraPlusAuthenticationError:
-            _LOGGER.exception("authentication failure on update")
+        except AuroraPlusAuthenticationError as e:
+            _LOGGER.exception(f"authentication failure on update: {e}")
             self._config_entry.async_start_reauth(self._hass)
         except HTTPError as e:
             status_code = e.response.status_code
             if status_code in [401, 403]:
-                _LOGGER.exception("authentication failure on update")
+                _LOGGER.exception(f"authentication failure on update: {e}")
                 self._config_entry.async_start_reauth(self._hass)
             raise e
+        except Exception as e:
+            _LOGGER.exception(f"authentication failure on update: {e}")
 
-        await self.update_listener(self._hass, self._config_entry)
+        await self.update_config_entry_token(self._hass, self._config_entry)
 
     @classmethod
     async def update_config_entry_token(
         cls, hass: HomeAssistant, config_entry: ConfigEntry
     ):
-        """
-        XXX: find the api object for the entity, and update its session token
-        """
         service_agreement_id = config_entry.data.get(CONF_SERVICE_AGREEMENT_ID)
+        if config_entry.state != ConfigEntryState.LOADED:
+            _LOGGER.debug(
+                f"update_config_entry_token for {service_agreement_id} not ready yet; skipping token update "
+            )
+            return
+
         entry_token = config_entry.data.get(CONF_TOKEN)
         api_token = cls._instances[service_agreement_id]._api.token
         if entry_token == api_token:
             _LOGGER.debug(
-                f"update_listener for {service_agreement_id} with unmodified token {entry_token=} == {api_token=}"
+                f"update_config_entry_token for {service_agreement_id} with unmodified token {entry_token=} == {api_token=}"
             )
             return
 
-        if api_token:
-            _LOGGER.debug(
-                f"update_listener for {service_agreement_id} with {api_token=}"
-            )
-            api = await hass.async_add_executor_job(aurora_init, api_token)
-        else:
-            _LOGGER.warning(
-                "update_listener for {service_agreement_id} with no usable token"
-            )
-            return
-
-        cls._instances[service_agreement_id].update_api(api)
-
-    def update_api(self, api):
-        _LOGGER.debug(f"updating {self=} to use {api=}")
-        self._api = api
+        _LOGGER.debug(f"update_config_entry_token setting to {api_token=}...")
+        updated = hass.config_entries.async_update_entry(
+            config_entry,
+            data={
+                CONF_SERVICE_AGREEMENT_ID: service_agreement_id,
+                CONF_TOKEN: api_token.copy(),
+            },
+        )
+        _LOGGER.debug(f"update_config_entry_token token updated: {updated=}")
 
     def __getattr__(self, attr: str) -> Any:
         """Forward any attribute access to the session, or handle error"""

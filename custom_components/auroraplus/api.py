@@ -17,7 +17,11 @@ def aurora_init(
 ) -> AuroraPlusApi:
     _LOGGER.debug(f"aurora_init {token=}")
     try:
-        api = AuroraPlusApi(token=token)
+        # We need to copy the token, otherwise the AuroraPlusApi will use and update
+        # the reference that it's been passed. If the reference comes from the
+        # ConfigEntry, both will always hold the same value in memory. If they are
+        # the same, HA will not persist the updated value.
+        api = AuroraPlusApi(token=token.copy())
 
         # We need this data in AuroraPlusCoordinator.__init__so we have the
         # serviceAgreementID, preiseAddress, and tariffs over the previous

@@ -26,10 +26,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     except OSError as err:
         raise PlatformNotReady("Connection to Aurora+ failed") from err
 
-    entry.async_on_unload(
-        entry.add_update_listener(AuroraPlusCoordinator.update_listener)
-    )
-
     entry.runtime_data = AuroraPlusCoordinator(hass, entry, api)
 
     if not (
@@ -40,4 +36,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
 
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    await AuroraPlusCoordinator.update_config_entry_token(hass, entry)
     return True
