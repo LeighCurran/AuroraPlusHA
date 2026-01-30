@@ -1,0 +1,9 @@
+# This should match the version in custom_components/auroraplus/manifest.json
+auroraplus
+homeassistant_historical_sensor
+
+# Test dependencies
+pytest
+pytest-cov
+pytest-homeassistant-custom-component
+pytest-ruff

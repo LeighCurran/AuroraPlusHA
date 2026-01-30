@@ -1,0 +1,30 @@
+name: Tests
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      # Every push on those branches
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  run_unit_test:
+    runs-on: ubuntu-latest
+    name: PyTest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python Setup
+        uses: actions/setup-python@v4
+        with:
+          python-version: '>=3.5'
+
+      - name: Run Python Tests
+        run: |
+          pip install -r requirements.test.txt
+          python -m pytest --ruff

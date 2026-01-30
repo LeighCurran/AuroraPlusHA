@@ -51,6 +51,11 @@ Essentially, just run
 
 and follow the instructions (open link, enter MFA, copy URL of error page back).
 
+## Running tests
+
+    $ pip install -r requirements.test.txt
+    $ pytest
+
 ## CAVEATs
 
 1. The Aurora+ API doesn't deliver real-time metering, so the data for current
