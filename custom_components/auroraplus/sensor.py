@@ -22,7 +22,6 @@ from homeassistant.components.sensor.const import (
     SensorDeviceClass,
 )
 from homeassistant.const import (
-    CONF_MONITORED_CONDITIONS,
     CURRENCY_DOLLAR,
     UnitOfEnergy,
 )
@@ -33,10 +32,8 @@ from homeassistant_historical_sensor import (
 )
 
 from .const import (
-    CONF_ROUNDING,
     DEFAULT_MONITORED,
     DEFAULT_ROUNDING,
-    DOMAIN,
     SENSORS_MONETARY,
     SENSOR_DOLLARVALUEUSAGE,
     SENSOR_DOLLARVALUEUSAGETARIFF,

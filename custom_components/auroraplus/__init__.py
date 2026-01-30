@@ -9,7 +9,7 @@ from homeassistant.exceptions import (
 
 
 from .api import aurora_init
-from .const import CONF_TOKEN, DOMAIN
+from .const import CONF_TOKEN
 from .coordinator import AuroraPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)

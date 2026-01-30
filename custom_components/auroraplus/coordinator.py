@@ -3,7 +3,7 @@ import logging
 from auroraplus import AuroraPlusApi, AuroraPlusAuthenticationError
 from requests.exceptions import HTTPError
 
-from homeassistant.exceptions import ConfigEntryAuthFailed, PlatformNotReady
+from homeassistant.exceptions import PlatformNotReady
 from homeassistant.util import Throttle
 
 from .api import aurora_init
@@ -72,7 +72,7 @@ class AuroraPlusCoordinator:
                 + self._api.day["StartDate"]
                 + f" with {self._api.token}"
             )
-        except AuroraPlusAuthenticationError as e:
+        except AuroraPlusAuthenticationError:
             _LOGGER.exception("authentication failure on update")
             self._config_entry.async_start_reauth(self._hass)
         except HTTPError as e:
