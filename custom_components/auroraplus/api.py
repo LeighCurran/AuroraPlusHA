@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from auroraplus import AuroraPlusApi, AuroraPlusAuthenticationError
 from requests.exceptions import HTTPError
@@ -12,8 +13,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def aurora_init(
-    token: dict = {},
-):
+    token: dict[str, Any] = {},
+) -> AuroraPlusApi:
     _LOGGER.debug(f"aurora_init {token=}")
     try:
         api = AuroraPlusApi(token=token)

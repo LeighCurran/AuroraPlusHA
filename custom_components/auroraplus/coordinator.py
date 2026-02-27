@@ -1,8 +1,12 @@
 import logging
+from typing import Any
+
+from homeassistant.core import HomeAssistant
 
 from auroraplus import AuroraPlusApi, AuroraPlusAuthenticationError
 from requests.exceptions import HTTPError
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.util import Throttle
 
@@ -19,13 +23,18 @@ _LOGGER = logging.getLogger(__name__)
 class AuroraPlusCoordinator:
     """Asynchronously-updating wrapper for the AuroraPlus API."""
 
-    _hass = None
-    _api: AuroraPlusApi = None
-    _config_entry = None
+    _hass: HomeAssistant
+    _api: AuroraPlusApi
+    _config_entry: ConfigEntry
+
+    service_agreement_id: str
+    service_address: str
 
     _instances = {}
 
-    def __init__(self, hass, config_entry, api):
+    def __init__(
+        self, hass: HomeAssistant, config_entry: ConfigEntry, api: AuroraPlusApi
+    ):
         self._hass = hass
         self._config_entry = config_entry
         self._api = api
@@ -85,7 +94,9 @@ class AuroraPlusCoordinator:
         await self.update_listener(self._hass, self._config_entry)
 
     @classmethod
-    async def update_listener(cls, hass, config_entry):
+    async def update_config_entry_token(
+        cls, hass: HomeAssistant, config_entry: ConfigEntry
+    ):
         """
         XXX: find the api object for the entity, and update its session token
         """
@@ -115,7 +126,7 @@ class AuroraPlusCoordinator:
         _LOGGER.debug(f"updating {self=} to use {api=}")
         self._api = api
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> Any:
         """Forward any attribute access to the session, or handle error"""
         if attr == "_throttle":
             raise AttributeError()

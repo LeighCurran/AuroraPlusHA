@@ -10,6 +10,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.auroraplus.config_flow import AuroraPlusConfigFlow
 from custom_components.auroraplus.const import CONF_SERVICE_AGREEMENT_ID, DOMAIN
 
+
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Enable custom integrations."""
@@ -48,5 +49,3 @@ async def config_entry(
     config_entry.setup_lock.release()
 
     return config_entry
-
-
