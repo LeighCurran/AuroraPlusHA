@@ -7,7 +7,7 @@
   "codeowners": ["@LeighCurran","@shtrom"],
   "requirements": [
       "auroraplus@git+https://github.com/LeighCurran/AuroraPlus@main",
-      "homeassistant-historical-sensor==2.0.0rc6"
+      "homeassistant-historical-sensor@git+https://github.com/shtrom/ha-historical-sensor@2025.11-async_import_statistics-mean_type"
   ],
   "loggers": [ "auroraplus" ],
   "iot_class": "cloud_polling",
