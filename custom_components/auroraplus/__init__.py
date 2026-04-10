@@ -2,6 +2,8 @@
 
 import logging
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import (
     ConfigEntryNotReady,
     PlatformNotReady,
@@ -9,28 +11,20 @@ from homeassistant.exceptions import (
 
 
 from .api import aurora_init
-from .const import CONF_TOKEN, CONF_ID_TOKEN, DOMAIN
+from .const import CONF_TOKEN
 from .coordinator import AuroraPlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass, entry):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up entry."""
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = dict(entry.data)
-
-    id_token = entry.data.get(CONF_ID_TOKEN)
     token = entry.data.get(CONF_TOKEN)
 
     try:
-        api = await hass.async_add_executor_job(aurora_init, token, id_token)
+        api = await hass.async_add_executor_job(aurora_init, token)
     except OSError as err:
         raise PlatformNotReady("Connection to Aurora+ failed") from err
-
-    entry.async_on_unload(
-        entry.add_update_listener(AuroraPlusCoordinator.update_listener)
-    )
 
     entry.runtime_data = AuroraPlusCoordinator(hass, entry, api)
 
@@ -42,4 +36,10 @@ async def async_setup_entry(hass, entry):
 
     await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
 
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    await AuroraPlusCoordinator.update_config_entry_token(hass, entry)
     return True

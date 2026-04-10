@@ -1,11 +1,9 @@
 import logging
+import json
 from typing import Any
 
 import homeassistant.helpers.config_validation as cv
 from homeassistant import config_entries
-from homeassistant.const import (
-    CONF_ACCESS_TOKEN,
-)
 from homeassistant.exceptions import ConfigEntryAuthFailed
 
 
@@ -13,7 +11,6 @@ import voluptuous as vol
 
 from .api import aurora_init
 from .const import (
-    CONF_ID_TOKEN,
     CONF_SERVICE_AGREEMENT_ID,
     CONF_TOKEN,
     DOMAIN,
@@ -24,7 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 # PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 AUTH_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_ID_TOKEN): cv.string,
+        vol.Required(CONF_TOKEN): cv.string,
     }
 )
 
@@ -41,16 +38,16 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _configure(self, user_input: dict[str, Any] | None = None):
         """
-        Get id_token from the user, and create a new service.
+        Get token from the user, and create a new service.
 
         If self.reauth_entry is set, this entry will be updated instead.
 
         """
         errors = {}
         if user_input is not None:
-            id_token = user_input.get(CONF_ID_TOKEN)
+            token = json.loads(user_input.get(CONF_TOKEN))
             try:
-                api = await self.hass.async_add_executor_job(aurora_init, {}, id_token)
+                api = await self.hass.async_add_executor_job(aurora_init, token)
                 address = api.premiseAddress
                 await self.async_set_unique_id(api.serviceAgreementID)
 
@@ -58,10 +55,8 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     self.hass.config_entries.async_update_entry(
                         self.reauth_entry,
                         data={
-                            CONF_ACCESS_TOKEN: None,
-                            CONF_ID_TOKEN: id_token,
                             CONF_SERVICE_AGREEMENT_ID: api.serviceAgreementID,
-                            CONF_TOKEN: None,
+                            CONF_TOKEN: token,
                         },
                     )
                     await self.hass.config_entries.async_reload(
@@ -73,10 +68,8 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     return self.async_create_entry(
                         title=address,
                         data={
-                            CONF_ACCESS_TOKEN: None,
-                            CONF_ID_TOKEN: id_token,
                             CONF_SERVICE_AGREEMENT_ID: api.serviceAgreementID,
-                            CONF_TOKEN: None,
+                            CONF_TOKEN: token,
                         },
                     )
 

@@ -2,8 +2,11 @@
 
 import datetime
 import logging
+from typing import Any, override
 
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import (
     IntegrationError,
 )
@@ -22,21 +25,23 @@ from homeassistant.components.sensor.const import (
     SensorDeviceClass,
 )
 from homeassistant.const import (
-    CONF_MONITORED_CONDITIONS,
     CURRENCY_DOLLAR,
     UnitOfEnergy,
 )
+
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
 from homeassistant_historical_sensor import (
     HistoricalSensor,
     HistoricalState,
     PollUpdateMixin,
 )
 
+from custom_components.auroraplus.coordinator import AuroraPlusCoordinator
+
 from .const import (
-    CONF_ROUNDING,
     DEFAULT_MONITORED,
     DEFAULT_ROUNDING,
-    DOMAIN,
     SENSORS_MONETARY,
     SENSOR_DOLLARVALUEUSAGE,
     SENSOR_DOLLARVALUEUSAGETARIFF,
@@ -49,12 +54,14 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
-    hass, config_entry, async_add_entities, discovery_info=None
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+    discovery_info: dict[str, Any] | None = None,
 ):
     """Set up the Aurora+ platform for sensors."""
-    config = hass.data[DOMAIN][config_entry.entry_id]
     name = "AuroraPlus"
-    rounding = config.get(CONF_ROUNDING, DEFAULT_ROUNDING)
+    rounding = DEFAULT_ROUNDING
 
     coordinator = config_entry.runtime_data
     await coordinator.async_update()
@@ -67,7 +74,7 @@ async def async_setup_entry(
     async_add_entities(
         [
             AuroraSensor(hass, sensor, name, coordinator, rounding)
-            for sensor in config.get(CONF_MONITORED_CONDITIONS, DEFAULT_MONITORED)
+            for sensor in DEFAULT_MONITORED
         ]
         + [
             AuroraHistoricalSensor(hass, sensor, name, coordinator, rounding)
@@ -75,46 +82,67 @@ async def async_setup_entry(
         ],
         True,
     )
+
     _LOGGER.info(f"Aurora+ platform ready with tariffs {tariffs}")
 
 
 class AuroraSensor(SensorEntity):
     """Representation of a Aurora+ sensor."""
 
-    def __init__(self, hass, sensor, name, coordinator, rounding):
+    _hass: HomeAssistant
+    _name: str
+    _sensor: str
+    _state: Any  # XXX
+    _last_reset: datetime.datetime
+    _coordinator: AuroraPlusCoordinator
+    _uniqueid: str
+    _rounding: int
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        sensor: str,
+        name: str,
+        coordinator: AuroraPlusCoordinator,
+        rounding: int,
+    ):
         """Initialize the Aurora+ sensor."""
         self._hass = hass
         self._name = name + " " + coordinator.service_agreement_id + " " + sensor
         self._sensor = sensor
-        self._unit_of_measurement = None
         self._state = None
-        self._last_reset = None
+        self._last_reset = datetime.datetime.strptime("1970", "%Y")
         self._coordinator = coordinator
         self._uniqueid = self._name.replace(" ", "_").lower()
         self._rounding = rounding
         _LOGGER.debug(f"{self._sensor} created")
 
     @property
-    def name(self):
+    @override
+    def name(self) -> str:
         """Return the name of the sensor."""
         return self._name
 
     @property
+    @override
     def state(self):
         """Return the state of the sensor."""
         return self._state
 
     @property
-    def last_reset(self):
+    @override
+    def last_reset(self) -> datetime.datetime:
         return self._last_reset
 
     @property
-    def state_class(self):
+    @override
+    def state_class(self) -> SensorStateClass:
         """Return the state class of the sensor."""
         return SensorStateClass.TOTAL
 
     @property
-    def device_class(self):
+    @override
+    def device_class(self) -> SensorDeviceClass:
         """Return device class fo the sensor."""
         if self._sensor in SENSORS_MONETARY:
             return SensorDeviceClass.MONETARY
@@ -122,12 +150,14 @@ class AuroraSensor(SensorEntity):
             return SensorDeviceClass.ENERGY
 
     @property
-    def unique_id(self):
+    @override
+    def unique_id(self) -> str:
         """Return the unique_id of the sensor."""
         return self._uniqueid
 
     @property
-    def unit_of_measurement(self):
+    @override
+    def unit_of_measurement(self) -> str:
         """Return the unit of measurement."""
         if self._sensor in SENSORS_MONETARY:
             return CURRENCY_DOLLAR
@@ -135,7 +165,8 @@ class AuroraSensor(SensorEntity):
             return UnitOfEnergy.KILO_WATT_HOUR
 
     @property
-    def extra_state_attributes(self):
+    @override
+    def extra_state_attributes(self) -> Any:
         """Return device state attributes."""
         if self._sensor == SENSOR_DOLLARVALUEUSAGE:
             return self._coordinator.DollarValueUsage
@@ -157,7 +188,7 @@ class AuroraSensor(SensorEntity):
         """Collect updated data from Aurora+ API."""
         await self._coordinator.async_update()
 
-        self._old_state = self._state
+        previous_state = self._state
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
             estimated_balance = self._coordinator.EstimatedBalance
             try:
@@ -177,17 +208,31 @@ class AuroraSensor(SensorEntity):
 
         else:
             _LOGGER.warning(f"{self._sensor}: Unknown sensor type")
-        if self._old_state and self._state != self._old_state:
+        if previous_state and self._state != previous_state:
             self._last_reset = datetime.datetime.now()
 
 
 class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
-    def __init__(self, hass, sensor, name, coordinator, rounding):
+    _hass: HomeAssistant
+    _name: str
+    _sensor: str
+    _attr_historical_states: list[HistoricalState]
+    _coordinator: AuroraPlusCoordinator
+    _uniqueid: str
+    _rounding: int
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        sensor: str,
+        name: str,
+        coordinator: AuroraPlusCoordinator,
+        rounding: int,
+    ):
         """Initialize the Aurora+ sensor."""
         self._hass = hass
         self._name = name + " " + coordinator.service_agreement_id + " " + sensor
         self._sensor = sensor
-        self._unit_of_measurement = None
         self._attr_historical_states = []
         self._coordinator = coordinator
         self._uniqueid = self._name.replace(" ", "_").lower()
@@ -195,7 +240,8 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         _LOGGER.debug(f"{self._sensor} created (historical)")
 
     @property
-    def name(self):
+    @override
+    def name(self) -> str:
         """Return the name of the sensor."""
         return self._name
 
@@ -205,7 +251,8 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
     #     return SensorStateClass.TOTAL
 
     @property
-    def device_class(self):
+    @override
+    def device_class(self) -> SensorDeviceClass:
         """Return device class fo the sensor.
         This method does some string-parsing and error handling magic,
         so others don't have to, to determine the type of sensor.
@@ -218,16 +265,19 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
             raise IntegrationError(f"{self._sensor} is not handled by {self.__class__}")
 
     @property
-    def unique_id(self):
+    @override
+    def unique_id(self) -> str:
         """Return the unique_id of the sensor."""
         return self._uniqueid
 
     @property
+    @override
     def statistic_id(self) -> str:
         return "sensor." + self._uniqueid
 
     @property
-    def unit_of_measurement(self):
+    @override
+    def unit_of_measurement(self) -> str:
         """Return the unit of measurement."""
         if self.device_class == SensorDeviceClass.MONETARY:
             return CURRENCY_DOLLAR
@@ -235,7 +285,8 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
             return UnitOfEnergy.KILO_WATT_HOUR
 
     @property
-    def historical_states(self):
+    @override
+    def historical_states(self) -> list[HistoricalState]:
         """Return the historical state of the sensor."""
         return self._attr_historical_states
 
