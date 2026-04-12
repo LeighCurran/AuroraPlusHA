@@ -71,10 +71,7 @@ async def async_setup_entry(
     tariffs = coordinator.week.get("TariffTypes")
 
     sensors_energy = [f"{SENSOR_KILOWATTHOURUSAGETARIFF} {t}" for t in tariffs]
-    # ha-historical-sensors currently disallows None, but HA core doesn't support a
-    # `monetary` UNIT_CLASS
-    # See https://github.com/ldotlopez/ha-historical-sensor/issues/19
-    # sensors_cost = [f"{SENSOR_DOLLARVALUEUSAGETARIFF} {t}" for t in tariffs]
+    sensors_cost = [f"{SENSOR_DOLLARVALUEUSAGETARIFF} {t}" for t in tariffs]
 
     async_add_entities(
         [
@@ -83,7 +80,7 @@ async def async_setup_entry(
         ]
         + [
             AuroraHistoricalSensor(hass, sensor, name, coordinator, rounding)
-            for sensor in sensors_energy  # + sensors_cost
+            for sensor in sensors_energy + sensors_cost
         ],
         True,
     )
