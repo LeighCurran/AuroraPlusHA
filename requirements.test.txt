@@ -1,6 +1,6 @@
 # This should match the version in custom_components/auroraplus/manifest.json
 auroraplus@git+https://github.com/LeighCurran/AuroraPlus@main
-homeassistant-historical-sensor == 3.0.0a4
+homeassistant-historical-sensor == 3.0.0a5
 
 # Test dependencies
 pytest

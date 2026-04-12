@@ -34,7 +34,6 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant_historical_sensor import (
     HistoricalSensor,
     HistoricalState,
-    PollUpdateMixin,
 )
 
 from custom_components.auroraplus.coordinator import AuroraPlusCoordinator
@@ -221,7 +220,7 @@ class AuroraSensor(SensorEntity):
             self._last_reset = datetime.datetime.now()
 
 
-class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
+class AuroraHistoricalSensor(HistoricalSensor, SensorEntity):
     _hass: HomeAssistant
     _name: str
     _sensor: str
