@@ -1,5 +1,6 @@
 import logging
-from unittest.mock import MagicMock
+from typing import Awaitable
+from unittest.mock import MagicMock, patch
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_TOKEN
@@ -17,10 +18,20 @@ async def test_async_setup(hass: HomeAssistant):
 
 
 @pytest.mark.asyncio
+@patch("custom_components.auroraplus.api.AuroraPlusApi")
 async def test_setup(
-    mock_api: MagicMock, config_entry: ConfigEntry, caplog: pytest.LogCaptureFixture
+    mock_auroraplus_api: MagicMock,
+    mock_api: MagicMock,
+    build_config_entry: Awaitable[ConfigEntry],
+    caplog: pytest.LogCaptureFixture,
 ):
-    caplog.set_level("DEBUG")
+    # Return a Mock when trying to build the real thing.
+    mock_auroraplus_api.return_value = mock_api
+
+    config_entry = await build_config_entry(mock_api)
+    assert "ERROR" not in caplog.text, "ERRORS in logging output"
+
+    caplog.clear()
 
     assert config_entry.state != ConfigEntryState.MIGRATION_ERROR, (
         "Encountered migration error despite using the AuroraPlusConfigFlow default"

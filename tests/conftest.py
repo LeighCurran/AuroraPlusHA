@@ -1,3 +1,4 @@
+from typing import Awaitable
 from unittest.mock import MagicMock, patch
 
 from auroraplus import AuroraPlusApi
@@ -70,26 +71,39 @@ async def mock_api() -> AuroraPlusApi:
 @pytest.fixture
 @patch("custom_components.auroraplus.api.AuroraPlusApi")
 async def config_entry(
-    api: MagicMock, mock_api: MagicMock, hass: HomeAssistant
+    auroraplus_api: MagicMock,
+    mock_api: MagicMock,
+    build_config_entry: Awaitable[ConfigEntry],
 ) -> ConfigEntry:
-    api.return_value = mock_api
+    # Return a Mock when trying to build the real thing.
+    auroraplus_api.return_value = mock_api
+    return await build_config_entry(mock_api)
 
-    config_entry = MockConfigEntry(
-        version=AuroraPlusConfigFlow.VERSION,
-        minor_version=AuroraPlusConfigFlow.MINOR_VERSION,
-        domain=DOMAIN,
-        data={
-            CONF_SERVICE_AGREEMENT_ID: mock_api.serviceAgreementID,
-            # XXX: Using copy() here defeats the purpose of the first test for
-            # identity in test_coordinator.test_update.
-            CONF_TOKEN: mock_api.token.copy(),
-        },
-        unique_id="config_entry_fixture",
-    )
-    config_entry.add_to_hass(hass)
 
-    assert await config_entry.setup_lock.acquire(), "Can't acquire setup lock; retry"
-    await config_entry.async_setup(hass)
-    config_entry.setup_lock.release()
+@pytest.fixture
+async def build_config_entry(hass: HomeAssistant) -> Awaitable[ConfigEntry]:
 
-    return config_entry
+    async def _build_config_entry(api: AuroraPlusApi) -> ConfigEntry:
+        config_entry = MockConfigEntry(
+            version=AuroraPlusConfigFlow.VERSION,
+            minor_version=AuroraPlusConfigFlow.MINOR_VERSION,
+            domain=DOMAIN,
+            data={
+                CONF_SERVICE_AGREEMENT_ID: api.serviceAgreementID,
+                # XXX: Using copy() here defeats the purpose of the first test for
+                # identity in test_coordinator.test_update.
+                CONF_TOKEN: api.token.copy(),
+            },
+            unique_id="config_entry_fixture",
+        )
+        config_entry.add_to_hass(hass)
+
+        assert await config_entry.setup_lock.acquire(), (
+            "Can't acquire setup lock; retry"
+        )
+        await config_entry.async_setup(hass)
+        config_entry.setup_lock.release()
+
+        return config_entry
+
+    return _build_config_entry

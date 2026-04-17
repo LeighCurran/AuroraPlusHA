@@ -34,7 +34,6 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant_historical_sensor import (
     HistoricalSensor,
     HistoricalState,
-    PollUpdateMixin,
 )
 
 from custom_components.auroraplus.coordinator import AuroraPlusCoordinator
@@ -48,6 +47,8 @@ from .const import (
     SENSOR_ESTIMATEDBALANCE,
     SENSOR_KILOWATTHOURUSAGE,
     SENSOR_KILOWATTHOURUSAGETARIFF,
+    UNIT_CLASS_ENERGY,
+    UNIT_CLASS_MONETARY,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -156,7 +157,14 @@ class AuroraSensor(SensorEntity):
         return self._uniqueid
 
     @property
-    @override
+    def unit_class(self) -> str:
+        """Return the unit of measurement."""
+        if self.device_class == SensorDeviceClass.MONETARY:
+            return UNIT_CLASS_MONETARY
+        elif self.device_class == SensorDeviceClass.ENERGY:
+            return UNIT_CLASS_ENERGY
+
+    @property
     def unit_of_measurement(self) -> str:
         """Return the unit of measurement."""
         if self._sensor in SENSORS_MONETARY:
@@ -212,7 +220,7 @@ class AuroraSensor(SensorEntity):
             self._last_reset = datetime.datetime.now()
 
 
-class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
+class AuroraHistoricalSensor(HistoricalSensor, SensorEntity):
     _hass: HomeAssistant
     _name: str
     _sensor: str
@@ -271,9 +279,12 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         return self._uniqueid
 
     @property
-    @override
-    def statistic_id(self) -> str:
-        return "sensor." + self._uniqueid
+    def unit_class(self) -> str:
+        """Return the unit of measurement."""
+        if self.device_class == SensorDeviceClass.MONETARY:
+            return UNIT_CLASS_MONETARY
+        elif self.device_class == SensorDeviceClass.ENERGY:
+            return UNIT_CLASS_ENERGY
 
     @property
     @override
@@ -310,7 +321,7 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
         self._attr_historical_states = [
             HistoricalState(
                 state=abs(float(r[field][tariff])),
-                dt=datetime.datetime.fromisoformat(r["StartTime"]),
+                timestamp=datetime.datetime.fromisoformat(r["StartTime"]).timestamp(),
             )
             for r in metered_records
             if r and r.get(field) and r.get(field).get(tariff)
@@ -328,6 +339,8 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
     def get_statistic_metadata(self) -> StatisticMetaData:
         meta = super().get_statistic_metadata()
         meta["has_sum"] = True
+        meta["unit_class"] = self.unit_class
+        meta["unit_of_measurement"] = self.unit_of_measurement
 
         return meta
 
@@ -352,7 +365,7 @@ class AuroraHistoricalSensor(PollUpdateMixin, HistoricalSensor, SensorEntity):
             accumulated = accumulated + hs.state
             ret.append(
                 StatisticData(
-                    start=hs.dt,
+                    start=datetime.datetime.fromtimestamp(hs.timestamp, datetime.UTC),
                     state=hs.state,
                     sum=accumulated,
                 )
