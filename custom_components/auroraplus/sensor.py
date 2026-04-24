@@ -82,7 +82,7 @@ async def async_setup_entry(
 class AuroraSensor(SensorEntity):
     """Representation of a Aurora+ sensor."""
 
-    _attr_state_class = SensorStateClass.TOTAL
+    _attr_native_value_class = SensorStateClass.TOTAL
     _coordinator: AuroraPlusCoordinator
     _rounding: int
     _sensor: str
@@ -100,7 +100,7 @@ class AuroraSensor(SensorEntity):
             f"{INTEGRATION_NAME} {coordinator.service_agreement_id} {sensor}"
         )
         self._sensor = sensor
-        self._attr_state = None
+        self._attr_native_value = None
         self._attr_last_reset = datetime.datetime.strptime("1970", "%Y").astimezone()
         self._coordinator = coordinator
         self._attr_unique_id = self._attr_name.replace(" ", "_").lower()
@@ -156,27 +156,27 @@ class AuroraSensor(SensorEntity):
         """Collect updated data from Aurora+ API."""
         await self._coordinator.async_update()
 
-        previous_state = self._attr_state
+        previous_state = self._attr_native_value
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
             estimated_balance = self._coordinator.EstimatedBalance
             try:
-                self._attr_state = round(float(estimated_balance), self._rounding)
+                self._attr_native_value = round(float(estimated_balance), self._rounding)
             except TypeError:
-                self._attr_state = None
+                self._attr_native_value = None
         elif self._sensor == SENSOR_DOLLARVALUEUSAGE:
-            self._attr_state = round(
+            self._attr_native_value = round(
                 self._coordinator.DollarValueUsage.get("Total", float("nan")),
                 self._rounding,
             )
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:
-            self._attr_state = round(
+            self._attr_native_value = round(
                 self._coordinator.KilowattHourUsage.get("Total", float("nan")),
                 self._rounding,
             )
 
         else:
             _LOGGER.warning(f"{self._sensor}: Unknown sensor type")
-        if previous_state and self._attr_state != previous_state:
+        if previous_state and self._attr_native_value != previous_state:
             self._attr_last_reset = datetime.datetime.now().astimezone()
 
 

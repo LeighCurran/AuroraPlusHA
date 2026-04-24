@@ -22,9 +22,10 @@ _LOGGER = logging.getLogger(__name__)
 class AuroraPlusCoordinator:
     """Asynchronously-updating wrapper for the AuroraPlus API."""
 
-    _hass: HomeAssistant
+    hass: HomeAssistant
+    config_entry: ConfigEntry
+
     _api: AuroraPlusApi
-    _config_entry: ConfigEntry
 
     service_agreement_id: str
     service_address: str
@@ -34,8 +35,8 @@ class AuroraPlusCoordinator:
     def __init__(
         self, hass: HomeAssistant, config_entry: ConfigEntry, api: AuroraPlusApi
     ):
-        self._hass = hass
-        self._config_entry = config_entry
+        self.hass = hass
+        self.config_entry = config_entry
         self._api = api
         self.service_agreement_id = api.serviceAgreementID
         self.service_address = api.premiseAddress
@@ -57,12 +58,12 @@ class AuroraPlusCoordinator:
 
     async def _api_update(self):
         try:
-            await self._hass.async_add_executor_job(self._api.getcurrent)
+            await self.hass.async_add_executor_job(self._api.getcurrent)
 
             for i in range(-1, -10, -1):
-                await self._hass.async_add_executor_job(self._api.getday, i)
+                await self.hass.async_add_executor_job(self._api.getday, i)
                 if not self._api.day["NoDataFlag"]:
-                    await self._hass.async_add_executor_job(self._api.getsummary, i)
+                    await self.hass.async_add_executor_job(self._api.getsummary, i)
                     break
                 _LOGGER.debug(f"No data at index {i}")
             _LOGGER.info(
@@ -70,17 +71,17 @@ class AuroraPlusCoordinator:
             )
         except AuroraPlusAuthenticationError as e:
             _LOGGER.exception(f"authentication failure on update: {e}")
-            self._config_entry.async_start_reauth(self._hass)
+            self.config_entry.async_start_reauth(self.hass)
         except HTTPError as e:
             status_code = e.response.status_code
             if status_code in [401, 403]:
                 _LOGGER.exception(f"authentication failure on update: {e}")
-                self._config_entry.async_start_reauth(self._hass)
+                self.config_entry.async_start_reauth(self.hass)
             raise e
         except Exception as e:
             _LOGGER.exception(f"authentication failure on update: {e}")
 
-        await self.update_config_entry_token(self._hass, self._config_entry)
+        await self.update_config_entry_token(self.hass, self.config_entry)
 
     @classmethod
     async def update_config_entry_token(
