@@ -1,6 +1,7 @@
 import datetime
 
 DOMAIN = "auroraplus"
+INTEGRATION_NAME = "AuroraPlus"
 
 CONF_TOKEN = "token"
 CONF_SERVICE_AGREEMENT_ID = "service_agreement_id"
