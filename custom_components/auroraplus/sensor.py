@@ -123,6 +123,9 @@ class AuroraSensor(SensorEntity):
             return UNIT_CLASS_MONETARY
         elif self.device_class == SensorDeviceClass.ENERGY:
             return UNIT_CLASS_ENERGY
+        raise IntegrationError(
+            f"Device class {self.device_class} for {self._sensor} is not handled by {self.__class__}"
+        )
 
     @property
     def unit_of_measurement(self) -> str:
@@ -131,6 +134,9 @@ class AuroraSensor(SensorEntity):
             return CURRENCY_DOLLAR
         else:
             return UnitOfEnergy.KILO_WATT_HOUR
+        raise IntegrationError(
+            f"Sensor {self._sensor} is not handled by {self.__class__}"
+        )
 
     @property
     @override
@@ -215,8 +221,9 @@ class AuroraHistoricalSensor(HistoricalSensor, SensorEntity):
             return SensorDeviceClass.MONETARY
         elif self._sensor.startswith(SENSOR_KILOWATTHOURUSAGETARIFF):
             return SensorDeviceClass.ENERGY
-        else:
-            raise IntegrationError(f"{self._sensor} is not handled by {self.__class__}")
+        raise IntegrationError(
+            f"Sensor {self._sensor} is not handled by {self.__class__}"
+        )
 
     @property
     def unit_class(self) -> str:
@@ -225,6 +232,9 @@ class AuroraHistoricalSensor(HistoricalSensor, SensorEntity):
             return UNIT_CLASS_MONETARY
         elif self.device_class == SensorDeviceClass.ENERGY:
             return UNIT_CLASS_ENERGY
+        raise IntegrationError(
+            f"Device class {self.device_class} for {self._sensor} is not handled by {self.__class__}"
+        )
 
     @property
     def unit_of_measurement(self) -> str:
@@ -233,6 +243,9 @@ class AuroraHistoricalSensor(HistoricalSensor, SensorEntity):
             return CURRENCY_DOLLAR
         elif self.device_class == SensorDeviceClass.ENERGY:
             return UnitOfEnergy.KILO_WATT_HOUR
+        raise IntegrationError(
+            f"Device class {self.device_class} for {self._sensor} is not handled by {self.__class__}"
+        )
 
     async def async_update_historical(self):
         if self.device_class == SensorDeviceClass.MONETARY:
