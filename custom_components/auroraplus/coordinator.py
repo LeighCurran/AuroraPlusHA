@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.util import Throttle
 
+from .api import aurora_reinit
 from .const import (
     CONF_TOKEN,
     CONF_SERVICE_AGREEMENT_ID,
@@ -68,17 +69,43 @@ class AuroraPlusCoordinator:
             _LOGGER.info(
                 "Successfully obtained data from " + self._api.day["StartDate"]
             )
-        except AuroraPlusAuthenticationError as e:
-            _LOGGER.exception(f"authentication failure on update: {e}")
-            self._config_entry.async_start_reauth(self._hass)
-        except HTTPError as e:
-            status_code = e.response.status_code
-            if status_code in [401, 403]:
-                _LOGGER.exception(f"authentication failure on update: {e}")
+        except (AuroraPlusAuthenticationError, HTTPError) as e:
+            is_auth_error = isinstance(e, AuroraPlusAuthenticationError) or (
+                isinstance(e, HTTPError) and e.response.status_code in [401, 403]
+            )
+            if not is_auth_error:
+                raise
+
+            _LOGGER.warning(f"Auth failure on update, attempting OAuth refresh: {e}")
+            entry_token = self._config_entry.data.get(CONF_TOKEN, {})
+            refreshed = await self._hass.async_add_executor_job(
+                aurora_reinit, self._api, entry_token
+            )
+            if refreshed:
+                # Retry the data fetch with the refreshed token
+                try:
+                    await self._hass.async_add_executor_job(self._api.getcurrent)
+                    for i in range(-1, -10, -1):
+                        await self._hass.async_add_executor_job(self._api.getday, i)
+                        if not self._api.day["NoDataFlag"]:
+                            await self._hass.async_add_executor_job(
+                                self._api.getsummary, i
+                            )
+                            break
+                    _LOGGER.info(
+                        "Successfully obtained data after OAuth refresh from "
+                        + self._api.day["StartDate"]
+                    )
+                except Exception as retry_e:
+                    _LOGGER.exception(
+                        f"Retry after OAuth refresh also failed: {retry_e}"
+                    )
+                    self._config_entry.async_start_reauth(self._hass)
+            else:
+                _LOGGER.error("OAuth refresh failed, requesting reauth")
                 self._config_entry.async_start_reauth(self._hass)
-            raise e
         except Exception as e:
-            _LOGGER.exception(f"authentication failure on update: {e}")
+            _LOGGER.exception(f"unexpected failure on update: {e}")
 
         await self.update_config_entry_token(self._hass, self._config_entry)
 
