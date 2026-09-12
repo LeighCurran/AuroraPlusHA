@@ -1,5 +1,5 @@
 import logging
-from typing import Any, override
+from typing import Any, ClassVar, override
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant
@@ -67,7 +67,7 @@ class AuroraPlusDataCoordinator(DataUpdateCoordinator):
             status_code = e.response.status_code
             if status_code in [401, 403]:
                 raise ConfigEntryAuthFailed("authentication failure on setup") from e
-            raise e
+            raise
 
         await self._update_config_entry_token()
 
@@ -160,7 +160,7 @@ class AuroraPlusCoordinator:
     service_agreement_id: str
     service_address: str
 
-    _instances = {}
+    _instances: ClassVar[dict[str, "AuroraPlusCoordinator"]] = {}
 
     def __init__(
         self, hass: HomeAssistant, config_entry: ConfigEntry, api: AuroraPlusApi
@@ -182,9 +182,8 @@ class AuroraPlusCoordinator:
             _LOGGER.debug("... no throttle")
         try:
             await self._api_update()
-        except PlatformNotReady as exc:
-            _LOGGER.warning("AuroraPlusCoordinator not ready for data update yet")
-            _LOGGER.exception(exc)
+        except PlatformNotReady:
+            _LOGGER.exception("AuroraPlusCoordinator not ready for data update yet")
 
     async def _api_update(self):
         try:
@@ -199,17 +198,17 @@ class AuroraPlusCoordinator:
             _LOGGER.info(
                 "Successfully obtained data from " + self._api.day["StartDate"]
             )
-        except AuroraPlusAuthenticationError as e:
-            _LOGGER.exception(f"authentication failure on update: {e}")
+        except AuroraPlusAuthenticationError:
+            _LOGGER.exception("Authentication failure on update (AuroraPlus)")
             self.config_entry.async_start_reauth(self.hass)
         except HTTPError as e:
             status_code = e.response.status_code
             if status_code in [401, 403]:
-                _LOGGER.exception(f"authentication failure on update: {e}")
+                _LOGGER.exception("Authentication failure on update (HTTP)")
                 self.config_entry.async_start_reauth(self.hass)
-            raise e
-        except Exception as e:
-            _LOGGER.exception(f"authentication failure on update: {e}")
+            raise
+        except Exception:
+            _LOGGER.exception("Failure on update")
 
         await self.update_config_entry_token(self.hass, self.config_entry)
 

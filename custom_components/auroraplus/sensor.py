@@ -59,7 +59,7 @@ async def async_setup_entry(
     """Set up the Aurora+ platform for sensors."""
     rounding = DEFAULT_ROUNDING
 
-    coordinator = config_entry.runtime_data
+    coordinator: AuroraPlusCoordinator = config_entry.runtime_data
     await coordinator.async_update()
 
     tariffs = coordinator.week.get("TariffTypes")
@@ -166,7 +166,9 @@ class AuroraSensor(SensorEntity):
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
             estimated_balance = self._coordinator.EstimatedBalance
             try:
-                self._attr_native_value = round(float(estimated_balance), self._rounding)
+                self._attr_native_value = round(
+                    float(estimated_balance), self._rounding
+                )
             except TypeError:
                 self._attr_native_value = None
         elif self._sensor == SENSOR_DOLLARVALUEUSAGE:
