@@ -1,10 +1,10 @@
 import logging
-from typing import Awaitable
-from unittest.mock import MagicMock, patch
+from collections.abc import Awaitable
+from unittest.mock import Mock, patch
 
+import pytest
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_TOKEN
-import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
@@ -20,8 +20,8 @@ async def test_async_setup(hass: HomeAssistant):
 @pytest.mark.asyncio
 @patch("custom_components.auroraplus.api.AuroraPlusApi")
 async def test_setup(
-    mock_auroraplus_api: MagicMock,
-    mock_api: MagicMock,
+    mock_auroraplus_api: Mock,
+    mock_api: Mock,
     build_config_entry: Awaitable[ConfigEntry],
     caplog: pytest.LogCaptureFixture,
 ):
@@ -51,7 +51,7 @@ async def test_setup(
 
 @pytest.mark.asyncio
 async def test_update(
-    mock_api: MagicMock,
+    mock_api: Mock,
     config_entry: ConfigEntry,
     caplog: pytest.LogCaptureFixture,
     hass: HomeAssistant,

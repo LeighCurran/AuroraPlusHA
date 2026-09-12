@@ -4,33 +4,28 @@ import datetime
 import logging
 from typing import Any, override
 
-
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import (
-    IntegrationError,
-)
-
-from homeassistant.components.sensor import (
-    SensorEntity,
-    SensorStateClass,
-)
-
 from homeassistant.components.recorder.models import (
     StatisticData,
     StatisticMetaData,
 )
 from homeassistant.components.recorder.statistics import StatisticsRow
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.components.sensor.const import (
     SensorDeviceClass,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CURRENCY_DOLLAR,
     UnitOfEnergy,
 )
-
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import (
+    IntegrationError,
+)
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-
 from homeassistant_historical_sensor import (
     HistoricalSensor,
     HistoricalState,
@@ -42,12 +37,12 @@ from .const import (
     DEFAULT_MONITORED,
     DEFAULT_ROUNDING,
     INTEGRATION_NAME,
-    SENSORS_MONETARY,
     SENSOR_DOLLARVALUEUSAGE,
     SENSOR_DOLLARVALUEUSAGETARIFF,
     SENSOR_ESTIMATEDBALANCE,
     SENSOR_KILOWATTHOURUSAGE,
     SENSOR_KILOWATTHOURUSAGETARIFF,
+    SENSORS_MONETARY,
     UNIT_CLASS_ENERGY,
     UNIT_CLASS_MONETARY,
 )
@@ -64,7 +59,7 @@ async def async_setup_entry(
     """Set up the Aurora+ platform for sensors."""
     rounding = DEFAULT_ROUNDING
 
-    coordinator = config_entry.runtime_data
+    coordinator: AuroraPlusCoordinator = config_entry.runtime_data
     await coordinator.async_update()
 
     tariffs = coordinator.week.get("TariffTypes")
@@ -106,7 +101,7 @@ class AuroraSensor(SensorEntity):
         )
         self._sensor = sensor
         self._attr_state = None
-        self._attr_last_reset = datetime.datetime.strptime("1970", "%Y")
+        self._attr_last_reset = datetime.datetime.strptime("1970", "%Y").astimezone()
         self._coordinator = coordinator
         self._attr_unique_id = self._attr_name.replace(" ", "_").lower()
         self._rounding = rounding
@@ -188,7 +183,7 @@ class AuroraSensor(SensorEntity):
         else:
             _LOGGER.warning(f"{self._sensor}: Unknown sensor type")
         if previous_state and self._attr_state != previous_state:
-            self._attr_last_reset = datetime.datetime.now()
+            self._attr_last_reset = datetime.datetime.now().astimezone()
 
 
 class AuroraHistoricalSensor(HistoricalSensor, SensorEntity):

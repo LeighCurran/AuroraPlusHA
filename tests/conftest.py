@@ -1,9 +1,9 @@
-from typing import Awaitable
-from unittest.mock import MagicMock, patch
+from collections.abc import Awaitable
+from unittest.mock import MagicMock, Mock, patch
 
+import pytest
 from auroraplus import AuroraPlusApi
 from homeassistant.config_entries import ConfigEntry
-import pytest
 from homeassistant.const import CONF_TOKEN
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -71,8 +71,8 @@ async def mock_api() -> AuroraPlusApi:
 @pytest.fixture
 @patch("custom_components.auroraplus.api.AuroraPlusApi")
 async def config_entry(
-    auroraplus_api: MagicMock,
-    mock_api: MagicMock,
+    auroraplus_api: Mock,
+    mock_api: Mock,
     build_config_entry: Awaitable[ConfigEntry],
 ) -> ConfigEntry:
     # Return a Mock when trying to build the real thing.
