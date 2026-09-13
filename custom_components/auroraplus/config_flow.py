@@ -1,13 +1,11 @@
-import logging
 import json
+import logging
 from typing import Any
 
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.exceptions import ConfigEntryAuthFailed
-
-
-import voluptuous as vol
 
 from .api import aurora_init
 from .const import (
