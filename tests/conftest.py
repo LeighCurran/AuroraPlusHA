@@ -70,7 +70,11 @@ async def mock_api() -> AuroraPlusApi:
 
 @pytest.fixture
 @patch("custom_components.auroraplus.api.AuroraPlusApi")
+# Prevent scheduling a task which makes the test fail when it's found to linger at the
+# end.
+@patch("homeassistant_historical_sensor.sensor.async_track_time_interval")
 async def config_entry(
+    _mock_handle_update: Mock,
     auroraplus_api: Mock,
     mock_api: Mock,
     build_config_entry: Awaitable[ConfigEntry],
