@@ -84,7 +84,7 @@ async def async_setup_entry(
 class AuroraSensor(SensorEntity):
     """Representation of a Aurora+ sensor."""
 
-    _attr_state_class = SensorStateClass.TOTAL
+    _attr_state_class: str | None = SensorStateClass.TOTAL
     _coordinator: AuroraPlusCoordinator
     _rounding: int = DEFAULT_ROUNDING
     _sensor: str
@@ -109,7 +109,10 @@ class AuroraSensor(SensorEntity):
         )
         self._sensor = sensor
         self._attr_native_value = None
-        self._attr_last_reset = datetime.datetime.strptime("1970", "%Y").astimezone()
+        if self.state_class == SensorStateClass.TOTAL:
+            self._attr_last_reset = datetime.datetime.strptime(
+                "1970", "%Y"
+            ).astimezone()
         self._coordinator = coordinator
         self._attr_unique_id = self._attr_name.replace(" ", "_").lower()
         self._rounding = rounding
@@ -139,7 +142,11 @@ class AuroraSensor(SensorEntity):
         """Collect updated data from Aurora+ API."""
         await self._coordinator.async_update()
 
-        previous_state = self._attr_native_value
+        previous_state = (
+            self._attr_native_value
+            if self.state_class == SensorStateClass.TOTAL
+            else None
+        )
         self._attr_native_value = self._fetch_state_from_coordinator()
         self._attr_extra_state_attributes = self._fetch_attributes_from_coordinator()
 
