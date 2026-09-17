@@ -86,7 +86,7 @@ class AuroraSensor(SensorEntity):
 
     _attr_state_class = SensorStateClass.TOTAL
     _coordinator: AuroraPlusCoordinator
-    _rounding: int
+    _rounding: int = DEFAULT_ROUNDING
     _sensor: str
 
     _attr_device_class: str | None = None
@@ -99,7 +99,7 @@ class AuroraSensor(SensorEntity):
         self,
         sensor: str,
         coordinator: AuroraPlusCoordinator,
-        rounding: int,
+        rounding: int = DEFAULT_ROUNDING,
     ):
         """Initialize the Aurora+ sensor."""
         super().__init__()
