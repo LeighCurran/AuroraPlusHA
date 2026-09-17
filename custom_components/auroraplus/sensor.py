@@ -4,7 +4,7 @@ import datetime
 import logging
 
 # from abc import abstractmethod
-from typing import Any
+from typing import Any, ClassVar
 
 from homeassistant.components.recorder.models import (
     StatisticData,
@@ -74,7 +74,8 @@ async def async_setup_entry(
         + [
             AuroraHistoricalSensor(sensor, coordinator, rounding)
             for sensor in sensors_energy + sensors_cost
-        ],
+        ]
+        + [AuroraTimeOfUseSensor(coordinator)],
         True,
     )
 
@@ -312,3 +313,32 @@ class AuroraHistoricalSensor(HistoricalSensor, AuroraSensor):
             field = "KilowattHourUsage"
             return field, tariff
         raise IntegrationError(f"Sensor {self._sensor} doesn't have field and tariffs")
+
+
+class AuroraTimeOfUseSensor(AuroraSensor):
+    SENSOR = "Time of use"
+    _attr_state_class = None
+    options: ClassVar[list[str]] = ["PEAK", "OFFPEAK"]
+
+    def __init__(
+        self,
+        coordinator: AuroraPlusCoordinator,
+    ):
+        super().__init__(self.SENSOR, coordinator)
+
+    # @abstractmethod
+    def _fetch_state_from_coordinator(self):
+        return self._coordinator.CurrentTimeOfUseType
+
+    # @abstractmethod
+    def _fetch_attributes_from_coordinator(self) -> dict[str, Any]:
+        return {
+            "description": self._coordinator.CurrentTimeOfUse,
+            "end_date": self._coordinator.CurrentTimeOfUsePeriodEndDate,
+        }
+
+    def _get_device_class(self) -> SensorDeviceClass | None:
+        return SensorDeviceClass.ENUM
+
+    def _get_unit_of_measurement(self) -> str | None:
+        return None
