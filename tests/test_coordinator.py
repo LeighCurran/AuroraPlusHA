@@ -1,10 +1,10 @@
 import logging
-from typing import Awaitable
-from unittest.mock import MagicMock, patch
+from collections.abc import Awaitable
+from unittest.mock import MagicMock, Mock, patch
 
+import pytest
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_TOKEN
-import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
@@ -19,9 +19,13 @@ async def test_async_setup(hass: HomeAssistant):
 
 @pytest.mark.asyncio
 @patch("custom_components.auroraplus.api.AuroraPlusApi")
+# Prevent scheduling a task which makes the test fail when it's found to linger at the
+# end.
+@patch("homeassistant_historical_sensor.sensor.async_track_time_interval")
 async def test_setup(
-    mock_auroraplus_api: MagicMock,
-    mock_api: MagicMock,
+    _mock_async_track_time_interval: Mock,
+    mock_auroraplus_api: Mock,
+    mock_api: Mock,
     build_config_entry: Awaitable[ConfigEntry],
     caplog: pytest.LogCaptureFixture,
 ):

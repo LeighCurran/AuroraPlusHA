@@ -9,7 +9,6 @@ from homeassistant.exceptions import (
     PlatformNotReady,
 )
 
-
 from .api import aurora_init
 from .const import CONF_TOKEN
 from .coordinator import AuroraPlusCoordinator

@@ -1,19 +1,18 @@
 import logging
 from typing import Any
 
-from auroraplus import AuroraPlusApi, AuroraPlusAuthenticationError
-from requests.exceptions import HTTPError
-
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
 )
+from requests.exceptions import HTTPError
 
+from auroraplus import AuroraPlusApi, AuroraPlusAuthenticationError
 
 _LOGGER = logging.getLogger(__name__)
 
 
 def aurora_init(
-    token: dict[str, Any] = {},
+    token: dict[str, Any],
 ) -> AuroraPlusApi:
     _LOGGER.debug(f"aurora_init {token=}")
     try:
@@ -36,6 +35,6 @@ def aurora_init(
         status_code = e.response.status_code
         if status_code in [401, 403]:
             raise ConfigEntryAuthFailed("authentication failure on init") from e
-        raise e
+        raise
 
     return api
