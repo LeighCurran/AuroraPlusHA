@@ -4,7 +4,7 @@ import datetime
 import logging
 
 # from abc import abstractmethod
-from typing import Any
+from typing import Any, ClassVar
 
 from homeassistant.components.recorder.models import (
     StatisticData,
@@ -74,7 +74,8 @@ async def async_setup_entry(
         + [
             AuroraHistoricalSensor(sensor, coordinator, rounding)
             for sensor in sensors_energy + sensors_cost
-        ],
+        ]
+        + [AuroraTimeOfUseSensor(coordinator)],
         True,
     )
 
@@ -84,9 +85,9 @@ async def async_setup_entry(
 class AuroraSensor(SensorEntity):
     """Representation of a Aurora+ sensor."""
 
-    _attr_state_class = SensorStateClass.TOTAL
+    _attr_state_class: str | None = SensorStateClass.TOTAL
     _coordinator: AuroraPlusCoordinator
-    _rounding: int
+    _rounding: int = DEFAULT_ROUNDING
     _sensor: str
 
     _attr_device_class: str | None = None
@@ -99,7 +100,7 @@ class AuroraSensor(SensorEntity):
         self,
         sensor: str,
         coordinator: AuroraPlusCoordinator,
-        rounding: int,
+        rounding: int = DEFAULT_ROUNDING,
     ):
         """Initialize the Aurora+ sensor."""
         super().__init__()
@@ -109,7 +110,10 @@ class AuroraSensor(SensorEntity):
         )
         self._sensor = sensor
         self._attr_native_value = None
-        self._attr_last_reset = datetime.datetime.strptime("1970", "%Y").astimezone()
+        if self.state_class == SensorStateClass.TOTAL:
+            self._attr_last_reset = datetime.datetime.strptime(
+                "1970", "%Y"
+            ).astimezone()
         self._coordinator = coordinator
         self._attr_unique_id = self._attr_name.replace(" ", "_").lower()
         self._rounding = rounding
@@ -139,7 +143,11 @@ class AuroraSensor(SensorEntity):
         """Collect updated data from Aurora+ API."""
         await self._coordinator.async_update()
 
-        previous_state = self._attr_native_value
+        previous_state = (
+            self._attr_native_value
+            if self.state_class == SensorStateClass.TOTAL
+            else None
+        )
         self._attr_native_value = self._fetch_state_from_coordinator()
         self._attr_extra_state_attributes = self._fetch_attributes_from_coordinator()
 
@@ -305,3 +313,32 @@ class AuroraHistoricalSensor(HistoricalSensor, AuroraSensor):
             field = "KilowattHourUsage"
             return field, tariff
         raise IntegrationError(f"Sensor {self._sensor} doesn't have field and tariffs")
+
+
+class AuroraTimeOfUseSensor(AuroraSensor):
+    SENSOR = "Time of use"
+    _attr_state_class = None
+    options: ClassVar[list[str]] = ["PEAK", "OFFPEAK"]
+
+    def __init__(
+        self,
+        coordinator: AuroraPlusCoordinator,
+    ):
+        super().__init__(self.SENSOR, coordinator)
+
+    # @abstractmethod
+    def _fetch_state_from_coordinator(self):
+        return self._coordinator.CurrentTimeOfUseType
+
+    # @abstractmethod
+    def _fetch_attributes_from_coordinator(self) -> dict[str, Any]:
+        return {
+            "description": self._coordinator.CurrentTimeOfUse,
+            "end_date": self._coordinator.CurrentTimeOfUsePeriodEndDate,
+        }
+
+    def _get_device_class(self) -> SensorDeviceClass | None:
+        return SensorDeviceClass.ENUM
+
+    def _get_unit_of_measurement(self) -> str | None:
+        return None
