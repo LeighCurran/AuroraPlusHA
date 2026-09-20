@@ -75,7 +75,7 @@ async def async_setup_entry(
             AuroraHistoricalSensor(sensor, coordinator, rounding)
             for sensor in sensors_energy + sensors_cost
         ]
-        + [AuroraTimeOfUseSensor(coordinator)],
+        + [s(coordinator) for s in [AuroraTimeOfUseSensor, AuroraPowerHourSensor]],
         True,
     )
 
@@ -350,6 +350,83 @@ class AuroraTimeOfUseSensor(AuroraSensor):
             "description": self._coordinator.api.CurrentTimeOfUse,
             "end_date": self._coordinator.api.CurrentTimeOfUsePeriodEndDate,
         }
+
+    def _get_device_class(self) -> SensorDeviceClass | None:
+        return SensorDeviceClass.ENUM
+
+    def _get_unit_of_measurement(self) -> str | None:
+        return None
+
+
+class AuroraPowerHourSensor(AuroraSensor):
+    SENSOR = "Power Hour"
+    _attr_state_class = None
+    STATE_NONE = "No offer"
+    STATE_PENDING = "Pending offer(s)"
+    STATE_ACCEPTED = "Offer(s) accepted"
+    STATE_ACTIVE = "Powerhour active"
+
+    options: ClassVar[list[str]] = [
+        STATE_NONE,
+        STATE_PENDING,
+        STATE_ACCEPTED,
+        STATE_ACTIVE,
+    ]
+
+    def __init__(
+        self,
+        coordinator: AuroraPlusDataCoordinator,
+    ):
+        super().__init__(self.SENSOR, coordinator)
+
+    def _fetch_state_from_coordinator(self):
+        schedule = self._coordinator.api.powerhour
+        if not schedule:
+            return self.STATE_NONE
+
+        first_event = schedule[0]
+        now = datetime.datetime.now().astimezone()
+
+        if (
+            self._parse_datetime(first_event, "StartDateTime")
+            <= now
+            < self._parse_datetime(first_event, "EndDateTime")
+        ):
+            return self.STATE_ACTIVE
+
+        if any(not e.get("TimeslotAccepted") for e in schedule):
+            return self.STATE_PENDING
+
+        return self.STATE_ACCEPTED
+
+    def _fetch_attributes_from_coordinator(self) -> dict[str, Any]:
+        schedule = self._coordinator.api.powerhour
+        if not schedule:
+            return {}
+        next_event = schedule[0]
+        _LOGGER.debug(f"next power hour event {next_event}")
+        next_event_details = {
+            "next_event": next_event.get("EventName"),
+        }
+
+        try:
+            next_event_details["next_event_start"] = self._parse_datetime(
+                next_event, "StartDateTime"
+            )
+            next_event_details["next_event_end"] = self._parse_datetime(
+                next_event, "EndDateTime"
+            )
+
+        except TypeError, ValueError:
+            _LOGGER.exception(f"Failed getting powerhour details from {next_event}")
+
+        return next_event_details
+
+    @staticmethod
+    def _parse_datetime(event: dict[str, str], date: str):
+        return datetime.datetime.fromisoformat(
+            event.get("TimeslotAccepted", {}).get(date)
+        ).astimezone()
 
     def _get_device_class(self) -> SensorDeviceClass | None:
         return SensorDeviceClass.ENUM
