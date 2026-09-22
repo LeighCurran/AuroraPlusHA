@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
 from custom_components.auroraplus.const import DOMAIN
-from custom_components.auroraplus.coordinator import AuroraPlusCoordinator
+from custom_components.auroraplus.coordinator import AuroraPlusDataCoordinator
 
 
 async def test_async_setup(hass: HomeAssistant):
@@ -21,9 +21,15 @@ async def test_async_setup(hass: HomeAssistant):
 @patch("custom_components.auroraplus.api.AuroraPlusApi")
 # Prevent scheduling a task which makes the test fail when it's found to linger at the
 # end.
+@patch("homeassistant.helpers.debounce.Debouncer._schedule_timer")
 @patch("homeassistant_historical_sensor.sensor.async_track_time_interval")
+@patch(
+    "custom_components.auroraplus.coordinator.DataUpdateCoordinator._schedule_refresh"
+)
 async def test_setup(
+    _mock_schedule_refresh: Mock,
     _mock_async_track_time_interval: Mock,
+    _mock_schedule_timer: Mock,
     mock_auroraplus_api: Mock,
     mock_api: Mock,
     build_config_entry: Awaitable[ConfigEntry],
@@ -42,15 +48,16 @@ async def test_setup(
     )
 
     assert config_entry.runtime_data, "ConfigEntry's runtime_data not set"
-    assert isinstance(config_entry.runtime_data, AuroraPlusCoordinator), (
-        "ConfigEntry's runtime_data not an AuroraPlusCoordinator"
+    assert isinstance(config_entry.runtime_data, AuroraPlusDataCoordinator), (
+        "ConfigEntry's runtime_data not an AuroraPlusDataCoordinator"
     )
-    coordinator: AuroraPlusCoordinator = config_entry.runtime_data
+    coordinator: AuroraPlusDataCoordinator = config_entry.runtime_data
 
-    assert coordinator.day
+    assert coordinator.api
 
     assert mock_api.get_info.called
     assert mock_api.getcurrent.called
+    assert mock_api.getday.called
 
 
 @pytest.mark.asyncio
@@ -65,16 +72,16 @@ async def test_update(
     # Added by the fixture so we keep the same context.
     # hass = config_entry._hass
 
-    coordinator: AuroraPlusCoordinator = config_entry.runtime_data
+    coordinator: AuroraPlusDataCoordinator = config_entry.runtime_data
 
     def compare_tokens(
         config_entry: ConfigEntry,
-        coordinator: AuroraPlusCoordinator,
+        coordinator: AuroraPlusDataCoordinator,
         period: str,
         should_match: bool,
     ) -> tuple[dict, dict]:
         entry_token = config_entry.data.get(CONF_TOKEN)
-        api_token = coordinator._api.token
+        api_token = coordinator.api.token
 
         if not should_match:
             assert api_token != entry_token, f"Token data are the same {period}"
@@ -97,7 +104,7 @@ async def test_update(
     coordinator._throttle = {}
 
     with caplog.at_level(logging.DEBUG):
-        await coordinator.async_update()
+        await coordinator._async_update_data()
         # XXX: Does caplog work in async?
         # assert "token updated in config_entry:" in caplog.text
 

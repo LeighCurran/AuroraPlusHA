@@ -72,9 +72,15 @@ async def mock_api() -> AuroraPlusApi:
 @patch("custom_components.auroraplus.api.AuroraPlusApi")
 # Prevent scheduling a task which makes the test fail when it's found to linger at the
 # end.
+@patch("homeassistant.helpers.debounce.Debouncer._schedule_timer")
 @patch("homeassistant_historical_sensor.sensor.async_track_time_interval")
+@patch(
+    "custom_components.auroraplus.coordinator.AuroraPlusDataCoordinator._schedule_refresh"
+)
 async def config_entry(
+    _mock_schedule_refresh: Mock,
     _mock_async_track_time_interval: Mock,
+    _mock_schedule_timer: Mock,
     auroraplus_api: Mock,
     mock_api: Mock,
     build_config_entry: Awaitable[ConfigEntry],

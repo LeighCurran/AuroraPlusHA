@@ -2,8 +2,6 @@
 
 import datetime
 import logging
-
-# from abc import abstractmethod
 from typing import Any
 
 from homeassistant.components.recorder.models import (
@@ -23,17 +21,18 @@ from homeassistant.const import (
     CURRENCY_DOLLAR,
     UnitOfEnergy,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import (
     IntegrationError,
 )
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant_historical_sensor import (
     HistoricalSensor,
     HistoricalState,
 )
 
-from custom_components.auroraplus.coordinator import AuroraPlusCoordinator
+from custom_components.auroraplus.coordinator import AuroraPlusDataCoordinator
 
 from .const import (
     DEFAULT_MONITORED,
@@ -59,12 +58,12 @@ async def async_setup_entry(
     discovery_info: dict[str, Any] | None = None,
 ):
     """Set up the Aurora+ platform for sensors."""
+    _LOGGER.debug("async_setup_entry")
     rounding = DEFAULT_ROUNDING
 
-    coordinator: AuroraPlusCoordinator = config_entry.runtime_data
-    await coordinator.async_update()
+    coordinator: AuroraPlusDataCoordinator = config_entry.runtime_data
 
-    tariffs = coordinator.week.get("TariffTypes")
+    tariffs = coordinator.api.week.get("TariffTypes")
 
     sensors_energy = [f"{SENSOR_KILOWATTHOURUSAGETARIFF} {t}" for t in tariffs]
     sensors_cost = [f"{SENSOR_DOLLARVALUEUSAGETARIFF} {t}" for t in tariffs]
@@ -81,11 +80,11 @@ async def async_setup_entry(
     _LOGGER.info(f"Aurora+ platform ready with tariffs {tariffs}")
 
 
-class AuroraSensor(SensorEntity):
+class AuroraSensor(CoordinatorEntity, SensorEntity):
     """Representation of a Aurora+ sensor."""
 
     _attr_state_class: str | None = SensorStateClass.TOTAL
-    _coordinator: AuroraPlusCoordinator
+    _coordinator: AuroraPlusDataCoordinator
     _rounding: int = DEFAULT_ROUNDING
     _sensor: str
 
@@ -98,11 +97,12 @@ class AuroraSensor(SensorEntity):
     def __init__(
         self,
         sensor: str,
-        coordinator: AuroraPlusCoordinator,
+        coordinator: AuroraPlusDataCoordinator,
         rounding: int = DEFAULT_ROUNDING,
     ):
         """Initialize the Aurora+ sensor."""
-        super().__init__()
+        SensorEntity.__init__(self)
+        CoordinatorEntity.__init__(self, coordinator)
 
         self._attr_name = (
             f"{INTEGRATION_NAME} {coordinator.service_agreement_id} {sensor}"
@@ -138,10 +138,10 @@ class AuroraSensor(SensorEntity):
             f"Sensor {self._sensor} is not handled by {self.__class__} (unit of measurement)"
         )
 
-    async def async_update(self):
-        """Collect updated data from Aurora+ API."""
-        await self._coordinator.async_update()
-
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        _LOGGER.debug(f"{self._sensor}: _handle_coordinator_update")
         previous_state = (
             self._attr_native_value
             if self.state_class == SensorStateClass.TOTAL
@@ -150,13 +150,17 @@ class AuroraSensor(SensorEntity):
         self._attr_native_value = self._fetch_state_from_coordinator()
         self._attr_extra_state_attributes = self._fetch_attributes_from_coordinator()
 
+        _LOGGER.debug(
+            f"{self._sensor}: _handle_coordinator_update ... {self._attr_native_value}, {self._attr_extra_state_attributes}"
+        )
         if previous_state and self._attr_native_value != previous_state:
             self._attr_last_reset = datetime.datetime.now().astimezone()
 
-    # @abstractmethod
+        self.async_write_ha_state()
+
     def _fetch_state_from_coordinator(self):
         if self._sensor == SENSOR_ESTIMATEDBALANCE:
-            estimated_balance = self._coordinator.EstimatedBalance
+            estimated_balance = self._coordinator.api.EstimatedBalance
             try:
                 return round(float(estimated_balance), self._rounding)
             except TypeError:
@@ -164,35 +168,38 @@ class AuroraSensor(SensorEntity):
                 return None
         elif self._sensor == SENSOR_DOLLARVALUEUSAGE:
             return round(
-                self._coordinator.DollarValueUsage.get("Total", float("nan")),
+                self._coordinator.api.DollarValueUsage.get("Total", float("nan")),
                 self._rounding,
             )
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:
             return round(
-                self._coordinator.KilowattHourUsage.get("Total", float("nan")),
+                self._coordinator.api.KilowattHourUsage.get("Total", float("nan")),
                 self._rounding,
             )
 
         else:
             _LOGGER.warning(f"{self._sensor}: Unknown sensor type")
 
-    # @abstractmethod
     def _fetch_attributes_from_coordinator(self) -> dict[str, Any]:
         """Return device state attributes."""
         if self._sensor == SENSOR_DOLLARVALUEUSAGE:
-            return self._coordinator.DollarValueUsage
+            return self._coordinator.api.DollarValueUsage
         elif self._sensor == SENSOR_KILOWATTHOURUSAGE:
-            return self._coordinator.KilowattHourUsage
+            return self._coordinator.api.KilowattHourUsage
         elif self._sensor == SENSOR_ESTIMATEDBALANCE:
             attributes = {}
-            attributes["amount_owed"] = self._coordinator.AmountOwed
-            attributes["average_daily_usage"] = self._coordinator.AverageDailyUsage
-            attributes["usage_days_remaining"] = self._coordinator.UsageDaysRemaining
-            attributes["actual_balance"] = self._coordinator.ActualBalance
-            attributes["unbilled_amount"] = self._coordinator.UnbilledAmount
-            attributes["bill_total_amount"] = self._coordinator.BillTotalAmount
-            attributes["number_of_unpaid_bills"] = self._coordinator.NumberOfUnpaidBills
-            attributes["bill_overdue_amount"] = self._coordinator.BillOverDueAmount
+            attributes["amount_owed"] = self._coordinator.api.AmountOwed
+            attributes["average_daily_usage"] = self._coordinator.api.AverageDailyUsage
+            attributes["usage_days_remaining"] = (
+                self._coordinator.api.UsageDaysRemaining
+            )
+            attributes["actual_balance"] = self._coordinator.api.ActualBalance
+            attributes["unbilled_amount"] = self._coordinator.api.UnbilledAmount
+            attributes["bill_total_amount"] = self._coordinator.api.BillTotalAmount
+            attributes["number_of_unpaid_bills"] = (
+                self._coordinator.api.NumberOfUnpaidBills
+            )
+            attributes["bill_overdue_amount"] = self._coordinator.api.BillOverDueAmount
             return attributes
         return {}
 
@@ -206,7 +213,7 @@ class AuroraHistoricalSensor(HistoricalSensor, AuroraSensor):
     def __init__(
         self,
         sensor: str,
-        coordinator: AuroraPlusCoordinator,
+        coordinator: AuroraPlusDataCoordinator,
         rounding: int,
     ):
         """Initialize the Aurora+ sensor."""
@@ -215,15 +222,13 @@ class AuroraHistoricalSensor(HistoricalSensor, AuroraSensor):
         self._unit_class = self._get_unit_class()
         self._attr_historical_states = []
 
-    async def async_update(self):
+    def _fetch_state_from_coordinator(self):
         pass
 
     async def async_update_historical(self):
         field, tariff = self._get_state_field_and_tariff()
 
-        await self._coordinator.async_update()
-
-        metered_records = self._coordinator.day.get("MeteredUsageRecords")
+        metered_records = self._coordinator.api.day.get("MeteredUsageRecords")
         if metered_records is None:
             _LOGGER.warning(
                 f"{self._sensor}: no metered records, can't obtain hourly data"
@@ -301,7 +306,6 @@ class AuroraHistoricalSensor(HistoricalSensor, AuroraSensor):
         """Return the unit of measurement."""
         return self._unit_class
 
-    # @abstractmethod
     def _get_state_field_and_tariff(self) -> (str, str):
         if self.device_class == SensorDeviceClass.MONETARY:
             tariff = self._sensor.removeprefix(SENSOR_DOLLARVALUEUSAGETARIFF).strip()
