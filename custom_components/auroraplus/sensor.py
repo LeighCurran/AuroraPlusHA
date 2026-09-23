@@ -2,7 +2,7 @@
 
 import datetime
 import logging
-from typing import Any
+from typing import Any, override
 
 from homeassistant.components.recorder.models import (
     StatisticData,
@@ -25,6 +25,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import (
     IntegrationError,
 )
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant_historical_sensor import (
@@ -120,6 +121,11 @@ class AuroraSensor(CoordinatorEntity, SensorEntity):
 
         self._attr_device_class = self._get_device_class()
         self._attr_native_unit_of_measurement = self._get_unit_of_measurement()
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return self._coordinator.device_info
 
     def _get_device_class(self) -> SensorDeviceClass | None:
         """Return device class fo the sensor."""
@@ -221,6 +227,12 @@ class AuroraHistoricalSensor(HistoricalSensor, AuroraSensor):
 
         self._unit_class = self._get_unit_class()
         self._attr_historical_states = []
+
+    @override
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Don't show historical sensors in device."""
+        return None
 
     def _fetch_state_from_coordinator(self):
         pass

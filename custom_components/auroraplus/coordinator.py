@@ -8,6 +8,7 @@ from homeassistant.exceptions import (
     ConfigEntryNotReady,
     PlatformNotReady,
 )
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from requests.exceptions import HTTPError
 
@@ -17,6 +18,7 @@ from .const import (
     CONF_SERVICE_AGREEMENT_ID,
     CONF_TOKEN,
     DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
     INTEGRATION_NAME,
 )
 
@@ -26,6 +28,7 @@ _LOGGER = logging.getLogger(__name__)
 class AuroraPlusDataCoordinator(DataUpdateCoordinator):
     api: AuroraPlusApi
     tariff_types: list[str]
+    device_info: DeviceInfo
 
     def __init__(
         self, hass: HomeAssistant, config_entry: ConfigEntry, api: AuroraPlusApi
@@ -45,6 +48,16 @@ class AuroraPlusDataCoordinator(DataUpdateCoordinator):
             always_update=True,
         )
         self.api = api
+        self.device_info = DeviceInfo(
+            identifiers={
+                # Serial numbers are unique identifiers within a specific domain
+                (DOMAIN, self.api.serviceAgreementID)
+            },
+            name=self.api.premiseAddress,
+            manufacturer="Aurora Plus",
+            entry_type=DeviceEntryType.SERVICE,
+            serial_number=self.api.serviceAgreementID,
+        )
 
     @override
     async def _async_setup(self) -> None:
@@ -90,11 +103,6 @@ class AuroraPlusDataCoordinator(DataUpdateCoordinator):
                     await self.hass.async_add_executor_job(self.api.getsummary, i)
                     break
                 _LOGGER.debug(f"No data at index {i}")
-
-            await self.hass.async_add_executor_job(self.api.getpowerhour)
-            _LOGGER.debug(
-                f"AuroraPlusDataCoordinator: powerhour: {self.api.powerhour}"
-            )
 
             _LOGGER.info(
                 "AuroraPlusDataCoordinator: Successfully obtained data from "
