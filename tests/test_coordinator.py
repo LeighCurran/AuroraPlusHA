@@ -36,6 +36,7 @@ async def test_setup(
     caplog: pytest.LogCaptureFixture,
 ):
     mock_api.CurrentTimeOfUseType = "PEAK"
+    mock_api.CurrentTimeOfUsePeriodEndDate = "2025-12-26T11:00:01Z"
     mock_api.getpowerhour = MagicMock()
     mock_api.powerhour = []
 
