@@ -348,7 +348,9 @@ class AuroraTimeOfUseSensor(AuroraSensor):
     def _fetch_attributes_from_coordinator(self) -> dict[str, Any]:
         return {
             "description": self._coordinator.api.CurrentTimeOfUse,
-            "end_date": self._coordinator.api.CurrentTimeOfUsePeriodEndDate,
+            "end_date": datetime.datetime.fromisoformat(
+                self._coordinator.api.CurrentTimeOfUsePeriodEndDate
+            ),
         }
 
     def _get_device_class(self) -> SensorDeviceClass | None:
