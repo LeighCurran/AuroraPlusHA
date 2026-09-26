@@ -3,7 +3,7 @@ import datetime
 DOMAIN = "auroraplus"
 INTEGRATION_NAME = "AuroraPlus"
 
-CONF_TOKEN = "token"
+CONF_TOKEN = "token"  # nosec B105
 CONF_SERVICE_AGREEMENT_ID = "service_agreement_id"
 CONF_ROUNDING = "rounding"
 
