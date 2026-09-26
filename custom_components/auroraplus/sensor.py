@@ -128,7 +128,7 @@ class AuroraSensor(CoordinatorEntity, SensorEntity):
         return self._coordinator.device_info
 
     def _get_device_class(self) -> SensorDeviceClass | None:
-        """Return device class fo the sensor."""
+        """Return device class of the sensor."""
         if any(self._sensor.startswith(p) for p in SENSORS_MONETARY):
             return SensorDeviceClass.MONETARY
         else:
@@ -318,7 +318,7 @@ class AuroraHistoricalSensor(HistoricalSensor, AuroraSensor):
         """Return the unit of measurement."""
         return self._unit_class
 
-    def _get_state_field_and_tariff(self) -> (str, str):
+    def _get_state_field_and_tariff(self) -> tuple[str, str]:
         if self.device_class == SensorDeviceClass.MONETARY:
             tariff = self._sensor.removeprefix(SENSOR_DOLLARVALUEUSAGETARIFF).strip()
             field = "DollarValueUsage"
