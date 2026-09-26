@@ -1,0 +1,68 @@
+blueprint:
+  name: AuroraPlus Power Hour notifications
+  description: 'Send notifications when the Power Hour offers change'
+  domain: automation
+  author: Olivier Mehani <shtrom+ha@ssji.net>
+  input:
+    power_hour_sensor:
+      name: Power Hour sensor
+      selector:
+        entity:
+          domain: sensor
+          integration: auroraplus
+
+triggers:
+- trigger: state
+  id: powerhour_offer
+  entity_id:
+  - !input power_hour_sensor
+  to:
+  - Pending offer(s)
+- trigger: state
+  id: powerhour_ended
+  entity_id:
+  - !input power_hour_sensor
+  to:
+  - Powerhour active
+- trigger: state
+  id: powerhour_started
+  entity_id:
+  - !input power_hour_sensor
+  from:
+  - Powerhour active
+
+conditions: []
+
+actions:
+- choose:
+  - conditions:
+    - condition: trigger
+      id:
+      - powerhour_offer
+    sequence:
+    - action: persistent_notification.create
+      metadata: {}
+      data:
+        title: New Power Hour offer
+        message: Go accept it at https://my.auroraenergy.com.au/.
+  - conditions:
+    - condition: trigger
+      id:
+      - powerhour_started
+    sequence:
+    - action: persistent_notification.create
+      metadata: {}
+      data:
+        title: Power Hour “{{ trigger.attributes.to_state_next_event}}” starting
+        message: Ends in {{time_until(trigger.to_state.attributes.next_event_date)}}
+          ({{trigger.to_state.attributes.next_event_date}}).
+  - conditions:
+    - condition: trigger
+      id:
+      - powerhour_ended
+    sequence:
+    - action: persistent_notification.create
+      metadata: {}
+      data:
+        title: Power Hour “{{ trigger.attributes.from_state_next_event}}” ended
+mode: single

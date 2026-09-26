@@ -58,6 +58,17 @@ Essentially, just run
 
 and follow the instructions (open link, enter MFA, copy URL of error page back).
 
+## Notification blueprints
+
+It is useful to be know of transition of the Time of Use and Power Hour sensors.
+
+Simple blueprints for automation on the most important transitions can be found
+in https://github.com/LeighCurran/AuroraPlusHA/tree/main/blueprints
+
+If you want to extend them, you can create an Automation from one of the
+blueprints, then “Take control” of it from the Automation's kebab menu on the
+top-right.
+
 ## Running tests
 
     $ pip install -r requirements.test.txt

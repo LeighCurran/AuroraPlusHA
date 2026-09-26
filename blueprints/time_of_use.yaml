@@ -1,0 +1,52 @@
+blueprint:
+  name: AuroraPlus Time of Use notifications
+  description: Send notifications on Time of Use tariff transitions
+  domain: automation
+  author: Olivier Mehani <shtrom+ha@ssji.net>
+  input:
+    time_of_use_sensor:
+      name: Time of Use sensor
+      selector:
+        entity:
+          domain: sensor
+          integration: auroraplus
+
+triggers:
+- trigger: state
+  id: offpeak_started
+  entity_id:
+  - !input time_of_use_sensor
+  to:
+  - OFFPEAK
+- trigger: state
+  id: peak_started
+  entity_id:
+  - !input time_of_use_sensor
+  to:
+  - PEAK
+
+conditions: []
+
+actions:
+- choose:
+  - conditions:
+    - condition: trigger
+      id:
+      - offpeak_started
+    sequence:
+    - action: persistent_notification.create
+      metadata: {}
+      data:
+        title: Off-peak period started
+        message: Ends in {{time_until(trigger.to_state.attributes.end_date)}} ({{trigger.to_state.attributes.end_date}}).
+  - conditions:
+    - condition: trigger
+      id:
+      - peak_started
+    sequence:
+    - action: persistent_notification.create
+      metadata: {}
+      data:
+        title: Peak period started
+        message: Ends in {{time_until(trigger.to_state.attributes.end_date)}} ({{trigger.to_state.attributes.end_date}}).
+mode: single
