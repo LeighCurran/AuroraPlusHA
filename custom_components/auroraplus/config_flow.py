@@ -80,6 +80,10 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=AUTH_SCHEMA,
             errors=errors,
+            description_placeholders={
+                "token_page": "https://shtrom.github.io/AuroraPlus/",
+                "token_instructions": "https://github.com/LeighCurran/AuroraPlus/tree/oauth-mfa-token?tab=readme-ov-file#obtain-a-token",
+            }
         )
 
     async def async_step_reauth(self, user_input=None):
