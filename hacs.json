@@ -1,6 +1,4 @@
 {
   "name": "Aurora+",
-  "render_readme": true,
-  "iot_class": "Cloud Polling",
-  "country": ["AU"]
+  "country": "AU"
 }
