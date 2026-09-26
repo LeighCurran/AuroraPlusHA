@@ -35,6 +35,11 @@ async def test_setup(
     build_config_entry: Awaitable[ConfigEntry],
     caplog: pytest.LogCaptureFixture,
 ):
+    mock_api.CurrentTimeOfUseType = "PEAK"
+    mock_api.CurrentTimeOfUsePeriodEndDate = "2025-12-26T11:00:01Z"
+    mock_api.getpowerhour = MagicMock()
+    mock_api.powerhour = []
+
     # Return a Mock when trying to build the real thing.
     mock_auroraplus_api.return_value = mock_api
 

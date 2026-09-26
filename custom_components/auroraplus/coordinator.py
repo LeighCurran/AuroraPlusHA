@@ -104,6 +104,9 @@ class AuroraPlusDataCoordinator(DataUpdateCoordinator):
                     break
                 _LOGGER.debug(f"No data at index {i}")
 
+            await self.hass.async_add_executor_job(self.api.getpowerhour)
+            _LOGGER.debug(f"AuroraPlusDataCoordinator: powerhour: {self.api.powerhour}")
+
             _LOGGER.info(
                 "AuroraPlusDataCoordinator: Successfully obtained data from "
                 + self.api.day["StartDate"]

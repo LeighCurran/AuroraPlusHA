@@ -4,23 +4,28 @@
 
 # Aurora+ for Home Assistant
 
-The Aurora+ integration adds support for retrieving data from the Aurora+ API such as:
+The Aurora+ integration adds support for retrieving data from the Aurora+ API.
+The following sensors are available, grouped as a single device for the service.
 
-- EstimatedBalance - This is shown in the Aurora+ app as 'Balance'
-- UsageDaysRemaining - This is shown in the Aurora+ app as 'Days Prepaid'
-- AverageDailyUsage
-- AmountOwed
-- ActualBalance
-- UnbilledAmount
-- BillTotalAmount
-- NumberOfUnpaidBills
-- BillOverDueAmount
+- Estimated Balance - This is shown in the Aurora+ app as 'Balance'
+- Dollar Value Usage (previous day)
+- Kilowatt Hour Usage (previous day)
+- Current Time of Use tariff
+- Upcoming PowerHour (offered and/or active)
+
+![Screenshot of the device page of an AuroraPlus service](./images/auroraplus_device.png)
 
 It also uses https://github.com/ldotlopez/ha-historical-sensor/ to fetch hourly
-usage from the previous day, and make it available for the Energy dashboard:
+usage from the previous day.
 
-- Dollar Value Usage (Total and per-Tariff)
-- Kilowatt Hour Usage (Total and per-Tariff)
+- Dollar Value Usage per-tariff
+- Kilowatt Hour Usage per-tariff
+
+Those entities are not directly visible in the device (as their current value
+is always unavailable). Their statistics are stored in the Recorder, so they
+can be added to the Energy dashboard, to get hourly usage for the previous day.
+
+![Screenshot of the HomeAssistant Energy dashboard showing usage records from AuroraPlus](./images/auroraplus_energy.png)
 
 Note: To use the Aurora+ integration you need a valid account with Aurora.
 
@@ -39,6 +44,8 @@ page](https://shtrom.github.io/AuroraPlus/)). Follow the instructions to login
 to AuroraPlus and provide the URL of the error page to obtain a `token`
 suitable to bootstrap authentication in HA. It should be a full JSON payload.
 
+### Local token fetching
+
 If you'd prefer not to trust a random page on the web with your AuroraPlus
 credentials, you can also obtain the token locally.  On any machine able to run
 Python (not necessarily your Home Assistant server), install the AuroraPlus
@@ -50,6 +57,17 @@ Essentially, just run
    aurora_get_token
 
 and follow the instructions (open link, enter MFA, copy URL of error page back).
+
+## Notification blueprints
+
+It is useful to be know of transition of the Time of Use and Power Hour sensors.
+
+Simple blueprints for automation on the most important transitions can be found
+in https://github.com/LeighCurran/AuroraPlusHA/tree/main/blueprints
+
+If you want to extend them, you can create an Automation from one of the
+blueprints, then “Take control” of it from the Automation's kebab menu on the
+top-right.
 
 ## Running tests
 
