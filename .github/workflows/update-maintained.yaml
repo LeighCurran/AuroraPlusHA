@@ -1,0 +1,28 @@
+name: Update maintenance badge
+
+on:
+  dispatch:
+  schedule:
+    - cron: "0 0 1 * *"
+
+jobs:
+  validate:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+      - name: Update maintenance badge
+        run: |
+          COMMITS=$(git log --since=$(date +%Y-%m-%d -d '-35 days') --oneline)
+          if [ -z "${COMMITS}" ]; then
+            exit 0
+          fi
+          YEAR="$(date +%Y-m)"
+          sed -n "/Maintenance/s/[0-9]\{3,4\}.svg/${YEAR}.svg/p" README.md
+          if ! git status --porcelain | grep -q README.md; then
+            exit 0
+          fi
+          git checkout -b update-maintenance-${YEAR}
+          git add README.md
+          git commit -m 'update maintenance badge for ${YEAR}'
+          git push origin HEAD
+          gh pr create
