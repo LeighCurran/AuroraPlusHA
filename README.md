@@ -58,6 +58,23 @@ Essentially, just run
 
 and follow the instructions (open link, enter MFA, copy URL of error page back).
 
+## Notification blueprints
+
+It is useful to know of transitions of the Time of Use and Power Hour sensors.
+
+Simple blueprints for automation on the most important transitions can be found
+in https://github.com/LeighCurran/AuroraPlusHA/tree/main/blueprints. To install
+them, got to `Settings/Automations & Scenes/Blueprints` and click `Import
+blueprint`. Or just use the buttons below: they will redirect you to your HA
+instance with the import paths pre-filled.
+
+* Time of Use notifications [![Import the Time of Use blueprint to your Home Assistant instance](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FLeighCurran%2FAuroraPlusHA%2Fblob%2Fupdate-readme%2Fblueprints%2Ftime_of_use.yaml)
+* Power Hour notifications [![Import the Power Hour blueprint to your Home Assistant instance](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FLeighCurran%2FAuroraPlusHA%2Fblob%2Fupdate-readme%2Fblueprints%2Fpowerhour.yaml)
+
+If you want to extend them, you can create an Automation from one of the
+blueprints, then “Take control” of it from the Automation's kebab menu on the
+top-right.
+
 ## Running tests
 
     $ pip install -r requirements.test.txt
