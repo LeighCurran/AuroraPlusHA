@@ -1,8 +1,13 @@
 name: Validate with HACS
 
 on:
-  push:
   pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      # Every push on those branches
+      - main
   schedule:
     - cron: "0 0 * * *"
 
