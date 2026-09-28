@@ -1,5 +1,5 @@
 [![buy me a coffee](https://img.shields.io/badge/If%20you%20like%20it-Buy%20us%20a%20coffee-green.svg?style=for-the-badge)](https://www.buymeacoffee.com/leighcurran)
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://my.home-assistant.io/redirect/hacs_repository/?owner=LeighCurran&repository=AuroraPlusHA&category=integration)
 ![Maintenance](https://img.shields.io/maintenance/yes/2026.svg?style=for-the-badge)
 
 # Aurora+ for Home Assistant
@@ -28,6 +28,13 @@ can be added to the Energy dashboard, to get hourly usage for the previous day.
 ![Screenshot of the HomeAssistant Energy dashboard showing usage records from AuroraPlus](./images/auroraplus_energy.png)
 
 Note: To use the Aurora+ integration you need a valid account with Aurora.
+
+## Installation
+
+The simplest way to install this integration is via the [Home Assistant Community Store (HACS)](https://github.com/custom-components/hacs).
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=LeighCurran&repository=AuroraPlusHA&category=integration)
+
 
 ## Configuration
 
@@ -68,8 +75,8 @@ them, got to `Settings/Automations & Scenes/Blueprints` and click `Import
 blueprint`. Or just use the buttons below: they will redirect you to your HA
 instance with the import paths pre-filled.
 
-* Time of Use notifications [![Import the Time of Use blueprint to your Home Assistant instance](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FLeighCurran%2FAuroraPlusHA%2Fblob%2Fupdate-readme%2Fblueprints%2Ftime_of_use.yaml)
-* Power Hour notifications [![Import the Power Hour blueprint to your Home Assistant instance](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FLeighCurran%2FAuroraPlusHA%2Fblob%2Fupdate-readme%2Fblueprints%2Fpowerhour.yaml)
+* Time of Use notifications [![Import the Time of Use blueprint to your Home Assistant instance](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FLeighCurran%2FAuroraPlusHA%2Fblob%2Fmain%2Fblueprints%2Ftime_of_use.yaml)
+* Power Hour notifications [![Import the Power Hour blueprint to your Home Assistant instance](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FLeighCurran%2FAuroraPlusHA%2Fblob%2Fmain%2Fblueprints%2Fpowerhour.yaml)
 
 If you want to extend them, you can create an Automation from one of the
 blueprints, then “Take control” of it from the Automation's kebab menu on the
