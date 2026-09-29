@@ -14,7 +14,7 @@ The following sensors are available, grouped as a single device for the service.
 - Current Time of Use tariff
 - Upcoming PowerHour (offered and/or active)
 
-![Screenshot of the device page of an AuroraPlus service](./images/auroraplus_device.png)
+![Screenshot of the device page of an AuroraPlus service](https://github.com/LeighCurran/AuroraPlusHA/raw/main/images/auroraplus_device.png)
 
 It also uses https://github.com/ldotlopez/ha-historical-sensor/ to fetch hourly
 usage from the previous day.
@@ -26,7 +26,7 @@ Those entities are not directly visible in the device (as their current value
 is always unavailable). Their statistics are stored in the Recorder, so they
 can be added to the Energy dashboard, to get hourly usage for the previous day.
 
-![Screenshot of the HomeAssistant Energy dashboard showing usage records from AuroraPlus](./images/auroraplus_energy.png)
+![Screenshot of the HomeAssistant Energy dashboard showing usage records from AuroraPlus](https://github.com/LeighCurran/AuroraPlusHA/raw/main/images/auroraplus_energy.png)
 
 Note: To use the Aurora+ integration you need a valid account with Aurora.
 
