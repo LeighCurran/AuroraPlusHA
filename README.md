@@ -2,6 +2,7 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://my.home-assistant.io/redirect/hacs_repository/?owner=LeighCurran&repository=AuroraPlusHA&category=integration)
 ![Maintenance](https://img.shields.io/maintenance/yes/2026.svg?style=for-the-badge)
 
+
 # Aurora+ for Home Assistant
 
 The Aurora+ integration adds support for retrieving data from the Aurora+ API.
@@ -28,6 +29,7 @@ can be added to the Energy dashboard, to get hourly usage for the previous day.
 ![Screenshot of the HomeAssistant Energy dashboard showing usage records from AuroraPlus](./images/auroraplus_energy.png)
 
 Note: To use the Aurora+ integration you need a valid account with Aurora.
+
 
 ## Installation
 
@@ -61,9 +63,10 @@ https://github.com/LeighCurran/AuroraPlus/tree/main?tab=readme-ov-file#obtain-a-
 
 Essentially, just run
 
-   aurora_get_token
+    aurora_get_token
 
 and follow the instructions (open link, enter MFA, copy URL of error page back).
+
 
 ## Notification blueprints
 
@@ -71,7 +74,7 @@ It is useful to know of transitions of the Time of Use and Power Hour sensors.
 
 Simple blueprints for automation on the most important transitions can be found
 in https://github.com/LeighCurran/AuroraPlusHA/tree/main/blueprints. To install
-them, got to `Settings/Automations & Scenes/Blueprints` and click `Import
+them, got to `Settings` / `Automations & Scenes` / `Blueprints` and click `Import
 blueprint`. Or just use the buttons below: they will redirect you to your HA
 instance with the import paths pre-filled.
 
@@ -79,13 +82,15 @@ instance with the import paths pre-filled.
 * Power Hour notifications [![Import the Power Hour blueprint to your Home Assistant instance](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FLeighCurran%2FAuroraPlusHA%2Fblob%2Fmain%2Fblueprints%2Fpowerhour.yaml)
 
 If you want to extend them, you can create an Automation from one of the
-blueprints, then “Take control” of it from the Automation's kebab menu on the
+blueprints, then `Take control` of it from the Automation's kebab menu on the
 top-right.
+
 
 ## Running tests
 
     $ pip install -r requirements.test.txt
     $ pytest
+
 
 ## CAVEATs
 
