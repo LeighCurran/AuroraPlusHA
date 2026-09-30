@@ -11,7 +11,7 @@
             },
             "user": {
                 "data": {"token": "Token"},
-                "description": "Go to [this page](token_page), or follow [these instructions](token_instructions) to obtain a full JSON token.",
+                "description": "Go to [this page]({token_page}), or follow [these instructions]({token_instructions}) to obtain a full JSON token.",
                 "title": "Authentication to Aurora+"
             }
         }
