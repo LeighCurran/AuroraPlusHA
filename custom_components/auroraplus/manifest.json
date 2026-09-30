@@ -12,5 +12,5 @@
       "auroraplus@git+https://github.com/LeighCurran/AuroraPlus@1.7.0",
       "homeassistant-historical-sensor==3.0.0a5"
   ],
-  "version": "2.2.0"
+  "version": "2.2.1"
 }
