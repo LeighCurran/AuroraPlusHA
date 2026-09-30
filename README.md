@@ -106,5 +106,13 @@ top-right.
    show up. Simply restart Home Assistant the next week for new sensors to
    be created.
 
-3. Support for multiple services is not complete, and would rely on matching
+3. When the AuroraPlus site is under maintenance, the integration will show up
+   as needing re-authentication. When doing so, an error message (e.g., “We are
+   making things better”) will be shown instead of the Cradle Mountain error page.
+   Even if a token can be obtained from that URL, it won't be sufficient to
+   successfully authenticate.
+
+   tl;dr: Do nothing and wait for the end of the maintenance.
+
+4. Support for multiple services is not complete, and would rely on matching
    functionality not available in the Python library yet.
