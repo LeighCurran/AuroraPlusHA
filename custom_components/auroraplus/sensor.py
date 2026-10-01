@@ -387,8 +387,10 @@ class AuroraPowerHourSensor(AuroraSensor):
             return self.STATE_NONE
 
         first_event = schedule[0]
-        now = datetime.datetime.now().astimezone()
+        if not first_event.get("TimeslotAccepted"):
+            return self.STATE_PENDING
 
+        now = datetime.datetime.now().astimezone()
         if (
             self._parse_datetime(first_event, "StartDateTime")
             <= now
@@ -405,11 +407,16 @@ class AuroraPowerHourSensor(AuroraSensor):
         schedule = self._coordinator.api.powerhour
         if not schedule:
             return {}
+
         next_event = schedule[0]
         _LOGGER.debug(f"next power hour event {next_event}")
+
         next_event_details = {
             "next_event": next_event.get("EventName"),
         }
+
+        if not next_event.get("TimeslotAccepted"):
+            return next_event_details
 
         try:
             next_event_details["next_event_start"] = self._parse_datetime(
