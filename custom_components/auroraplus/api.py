@@ -15,7 +15,6 @@ _LOGGER = logging.getLogger(__name__)
 def aurora_init(
     token: dict[str, Any],
 ) -> AuroraPlusApi:
-    _LOGGER.debug(f"aurora_init {token=}")
     try:
         # We need to copy the token, otherwise the AuroraPlusApi will use and update
         # the reference that it's been passed. If the reference comes from the
