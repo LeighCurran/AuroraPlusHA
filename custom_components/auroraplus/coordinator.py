@@ -143,11 +143,11 @@ class AuroraPlusDataCoordinator(DataUpdateCoordinator):
         api_token = self.api.token
         if entry_token == api_token:
             _LOGGER.debug(
-                f"AuroraPlusDataCoordinator: update_config_entry_token for {self.service_agreement_id} with unmodified token {entry_token=} == {api_token=}"
+                f"AuroraPlusDataCoordinator: update_config_entry_token for {self.service_agreement_id} with unmodified token"
             )
             return
 
-        # _LOGGER.debug(f"AuroraPlusDataCoordinator: update_config_entry_token setting to {api_token=}...")
+        # _LOGGER.debug(f"AuroraPlusDataCoordinator: update_config_entry_token setting...")
         updated = self.hass.config_entries.async_update_entry(
             self.config_entry,
             data={
