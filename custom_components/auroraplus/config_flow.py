@@ -3,6 +3,7 @@ import logging
 from typing import Any
 
 import homeassistant.helpers.config_validation as cv
+import requests
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -43,13 +44,15 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """
         errors = {}
         if user_input is not None:
-            token = json.loads(user_input.get(CONF_TOKEN))
             try:
+                token = json.loads(user_input.get(CONF_TOKEN))
                 api = await self.hass.async_add_executor_job(aurora_init, token)
                 address = api.premiseAddress
                 await self.async_set_unique_id(api.serviceAgreementID)
+                self._abort_if_unique_id_configured()
 
                 if self.reauth_entry:
+                    self._abort_if_unique_id_mismatch()
                     self.hass.config_entries.async_update_entry(
                         self.reauth_entry,
                         data={
@@ -70,6 +73,21 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             CONF_TOKEN: token,
                         },
                     )
+
+            except json.JSONDecodeError:
+                errors = {
+                    "base": "json",
+                }
+
+            except requests.exceptions.HTTPError:
+                errors = {
+                    "base": "http",
+                }
+
+            except OSError:
+                errors = {
+                    "base": "system",
+                }
 
             except ConfigEntryAuthFailed:
                 errors = {

@@ -3,7 +3,12 @@
         "abort": {
             "reauth_successful": "Successfully reauthenticated to Aurora+!"
         },
-        "error": {"auth": "An error occured while authenticating"},
+        "error": {
+            "auth": "An error occured while authenticating",
+            "http": "An error occured connecting to AuroraPlus",
+            "json": "Invalid JSON",
+            "system": "A system error occured"
+        },
         "step": {
             "reauth_confirm": {
                 "description": "The Aurora+ integration needs to re-authenticate your account",

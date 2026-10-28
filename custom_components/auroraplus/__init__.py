@@ -5,7 +5,7 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import (
-    PlatformNotReady,
+    ConfigEntryNotReady,
 )
 
 from .api import aurora_init
@@ -23,7 +23,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     try:
         api = await hass.async_add_executor_job(aurora_init, token)
     except OSError as err:
-        raise PlatformNotReady("Connection to Aurora+ failed") from err
+        raise ConfigEntryNotReady("Connection to Aurora+ failed") from err
 
     coordinator = AuroraPlusDataCoordinator(hass, entry, api)
 
