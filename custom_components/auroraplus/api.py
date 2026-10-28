@@ -3,6 +3,7 @@ from typing import Any
 
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
+    ConfigEntryNotReady,
 )
 from requests.exceptions import HTTPError
 
@@ -38,6 +39,6 @@ def aurora_init(
             raise ConfigEntryAuthFailed(
                 "aurora_init: Authentication failure on init"
             ) from e
-        raise ConfigEntryAuthFailed("aurora_init: HTTP error on init") from e
+        raise ConfigEntryNotReady("aurora_init: HTTP error on init") from e
 
     return api
