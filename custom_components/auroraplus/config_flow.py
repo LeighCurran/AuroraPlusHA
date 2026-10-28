@@ -49,23 +49,20 @@ class AuroraPlusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 api = await self.hass.async_add_executor_job(aurora_init, token)
                 address = api.premiseAddress
                 await self.async_set_unique_id(api.serviceAgreementID)
-                self._abort_if_unique_id_configured()
 
                 if self.reauth_entry:
                     self._abort_if_unique_id_mismatch()
-                    self.hass.config_entries.async_update_entry(
+                    self.async_update_reload_and_abort(
                         self.reauth_entry,
                         data={
                             CONF_SERVICE_AGREEMENT_ID: api.serviceAgreementID,
                             CONF_TOKEN: token,
                         },
+                        reason="reauth_successful",
                     )
-                    await self.hass.config_entries.async_reload(
-                        self.reauth_entry.entry_id
-                    )
-                    return self.async_abort(reason="reauth_successful")
 
                 else:
+                    self._abort_if_unique_id_configured()
                     return self.async_create_entry(
                         title=address,
                         data={
