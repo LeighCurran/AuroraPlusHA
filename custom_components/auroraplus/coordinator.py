@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from typing import Any, override
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
@@ -66,15 +67,7 @@ class AuroraPlusDataCoordinator(DataUpdateCoordinator):
         Load base info and current week to get available tariffs.
         """
         _LOGGER.debug("AuroraPlusDataCoordinator: _async_setup")
-        try:
-            await self.hass.async_add_executor_job(self.api.getweek)
-        except AuroraPlusAuthenticationError as e:
-            raise ConfigEntryAuthFailed("authentication failure on setup") from e
-        except HTTPError as e:
-            status_code = e.response.status_code
-            if status_code in [401, 403]:
-                raise ConfigEntryAuthFailed("authentication failure on setup") from e
-            raise
+        await self._async_api_call(self.api.getweek, "setup")
 
         await self._update_config_entry_token()
 
@@ -94,44 +87,47 @@ class AuroraPlusDataCoordinator(DataUpdateCoordinator):
 
     async def _api_update(self):
         # _LOGGER.debug("AuroraPlusDataCoordinator: running _api_udate ...")
+        await self._async_api_call(self.api.getcurrent, "update(getcurrent)")
+
+        for i in range(-1, -10, -1):
+            await self._async_api_call(self.api.getday, "update(getday)", i)
+            if not self.api.day["NoDataFlag"]:
+                await self._async_api_call(self.api.getsummary, "update(getsummary)", i)
+                break
+            _LOGGER.debug(f"No data at index {i}")
+
+        await self._async_api_call(self.api.getpowerhour, "update(powerhour)")
+        _LOGGER.debug(f"AuroraPlusDataCoordinator: powerhour: {self.api.powerhour}")
+
+        _LOGGER.info(
+            "AuroraPlusDataCoordinator: Successfully obtained data from "
+            + self.api.day["StartDate"]
+        )
+
+        await self._update_config_entry_token()
+
+    async def _async_api_call(self, fn: Callable, context: str, *args, **kwargs):
         try:
-            await self.hass.async_add_executor_job(self.api.getcurrent)
-
-            for i in range(-1, -10, -1):
-                await self.hass.async_add_executor_job(self.api.getday, i)
-                if not self.api.day["NoDataFlag"]:
-                    await self.hass.async_add_executor_job(self.api.getsummary, i)
-                    break
-                _LOGGER.debug(f"No data at index {i}")
-
-            await self.hass.async_add_executor_job(self.api.getpowerhour)
-            _LOGGER.debug(f"AuroraPlusDataCoordinator: powerhour: {self.api.powerhour}")
-
-            _LOGGER.info(
-                "AuroraPlusDataCoordinator: Successfully obtained data from "
-                + self.api.day["StartDate"]
-            )
+            await self.hass.async_add_executor_job(fn, *args, **kwargs)
         except AuroraPlusAuthenticationError as err:
             _LOGGER.exception(
-                "AuroraPlusDataCoordinator: Authentication failure on update (AuroraPlus)"
+                f"AuroraPlusDataCoordinator: Authentication failure on {context} (AuroraPlus)"
             )
             raise ConfigEntryAuthFailed from err
         except HTTPError as err:
             status_code = err.response.status_code
             if status_code in [401, 403]:
                 _LOGGER.exception(
-                    "AuroraPlusDataCoordinator: Authentication failure on update (HTTP)"
+                    f"AuroraPlusDataCoordinator: Authentication failure on {context} (HTTP)"
                 )
                 raise ConfigEntryAuthFailed from err
             raise UpdateFailed(
-                "AuroraPlusDataCoordinator: HTTP error on update"
+                f"AuroraPlusDataCoordinator: HTTP error on {context}"
             ) from err
         except Exception as err:
             raise UpdateFailed(
-                "AuroraPlusDataCoordinator: Communication failure on update"
+                f"AuroraPlusDataCoordinator: Communication failure on {context}"
             ) from err
-
-        await self._update_config_entry_token()
 
     async def _update_config_entry_token(self):
         _LOGGER.debug(
@@ -147,11 +143,11 @@ class AuroraPlusDataCoordinator(DataUpdateCoordinator):
         api_token = self.api.token
         if entry_token == api_token:
             _LOGGER.debug(
-                f"AuroraPlusDataCoordinator: update_config_entry_token for {self.service_agreement_id} with unmodified token {entry_token=} == {api_token=}"
+                f"AuroraPlusDataCoordinator: update_config_entry_token for {self.service_agreement_id} with unmodified token"
             )
             return
 
-        # _LOGGER.debug(f"AuroraPlusDataCoordinator: update_config_entry_token setting to {api_token=}...")
+        # _LOGGER.debug(f"AuroraPlusDataCoordinator: update_config_entry_token setting...")
         updated = self.hass.config_entries.async_update_entry(
             self.config_entry,
             data={
