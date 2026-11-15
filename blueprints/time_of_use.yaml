@@ -38,7 +38,7 @@ actions:
       metadata: {}
       data:
         title: Off-peak period started
-        message: Ends in {{ time_until(trigger.to_state.attributes.end_date) }} ({{ as_local(trigger.to_state.attributes.end_date) }}).
+        message: Ends in {{ time_until(trigger.to_state.attributes.end_date|default(0)) }} ({{ as_local(trigger.to_state.attributes.end_date|default(0)) }}).
   - conditions:
     - condition: trigger
       id:
@@ -48,5 +48,5 @@ actions:
       metadata: {}
       data:
         title: Peak period started
-        message: Ends in {{ time_until(trigger.to_state.attributes.end_date) }} ({{ as_local(trigger.to_state.attributes.end_date) }}).
+        message: Ends in {{ time_until(trigger.to_state.attributes.end_date|default(0)) }} ({{ as_local(trigger.to_state.attributes.end_date|default(0)) }}).
 mode: single
