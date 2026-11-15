@@ -53,9 +53,9 @@ actions:
     - action: persistent_notification.create
       metadata: {}
       data:
-        title: Power Hour “{{ trigger.attributes.to_state_next_event }}” starting
-        message: Ends in {{ time_until(trigger.to_state.attributes.next_event_date) }}
-          ({{ as_local(trigger.to_state.attributes.next_event_date) }}).
+        title: Power Hour “{{ trigger.from_state.attributes.next_event|default("unknown") }}” starting
+        message: Ends in {{ time_until(trigger.from_state.attributes.next_event_date|default(0)) }}
+          ({{ as_local(trigger.from_state.attributes.next_event_date|default(0)) }}).
   - conditions:
     - condition: trigger
       id:
@@ -64,5 +64,5 @@ actions:
     - action: persistent_notification.create
       metadata: {}
       data:
-        title: Power Hour “{{ trigger.attributes.from_state_next_event}}” ended
+        title: Power Hour “{{ trigger.from_state.attributes.next_event|default("unknown") }}” ended
 mode: single
